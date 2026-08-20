@@ -43,11 +43,11 @@ user --name=mathias --groups=wheel --lock --shell=/bin/bash
 #
 # Pin the install disk so extra NVMe/USB/SD devices are not wiped.
 # Change nvme0n1 to sda (SATA) or vda (VM) to match the target machine.
-ignoredisk --only-use=nvme0n1
+ignoredisk --only-use=sata0
 zerombr
-clearpart --all --initlabel --drives=nvme0n1
+clearpart --all --initlabel --drives=sata0
 autopart --type=lvm
-bootloader --timeout=5 --boot-drive=nvme0n1
+bootloader --timeout=5 --boot-drive=sata0
 
 # --- Package selection ---------------------------------------------------
 # Keep this genuinely minimal — Sway, apps, and everything else are Ansible's
