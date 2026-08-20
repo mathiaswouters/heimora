@@ -120,6 +120,8 @@ Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 
 - Run `ansible-pull` with **sudo**. The playbook uses `become` with `become_ask_pass = False`.
 - A minimal Fedora install boots to `multi-user.target`. Enabling greetd is not enough on its own, because greetd is `WantedBy=graphical.target` — you would reboot straight back into a TTY. The `services` role runs `systemctl set-default graphical.target` to fix that. Verify with `systemctl get-default`.
+- greetd's unit is `Conflicts=getty@tty1.service`, so a greetd that fails to start also takes down the only getty you would have used to debug it. With Fedora's `rhgb quiet` and no plymouth on a minimal install, the result is GRUB's `Booting …` message frozen on screen and a machine that looks hung but is running fine. `Ctrl+Alt+F3` or SSH gets you in; see [DEPLOY-VM.md](DEPLOY-VM.md#recovering-a-machine-with-no-login-prompt).
+- Fedora's `greetd` package does not create the `greeter` user that `/etc/greetd/config.toml` points at, and greetd exits immediately without it. The `services` role creates it and asserts it resolves before switching the default target, because that combination is exactly how you get a green playbook and an unbootable-looking machine.
 - `pipewire` / `wireplumber` user units need a user D-Bus session. That usually is not there during `ansible-pull`. The tasks use `ignore_errors`. After the first Sway login:
 
   ```bash

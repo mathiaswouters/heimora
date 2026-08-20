@@ -52,11 +52,14 @@ virt-install \
   --os-variant fedora42 \
   --network network=default \
   --boot uefi \
-  --graphics virtio \
+  --graphics spice \
+  --video virtio \
   --cdrom /path/to/Fedora-Everything-netinst-x86_64-44-1.7.iso
 ```
 
 If `fedora42` is unknown: `osinfo-query os | grep -i fedora`.
+
+Whatever the hypervisor, the guest needs a video device that gives Linux a DRM node — Sway will not start without one. `virtio` and plain `std`/VGA both do; check with `ls /dev/dri` (expect `card0`). On Proxmox the default display is fine.
 
 ### In Anaconda
 
@@ -146,9 +149,30 @@ Or `ansible-pull` again (pulls `main` and re-runs). Useful flags: `--tags sway`,
 | `hosts` skipped / no hosts matched | Use the command above (`hosts: all`, connection local) |
 | Missing RPM / dnf error | Package name wrong in `group_vars/all.yml`; RPM Fusion not ready on this Fedora |
 | Playbook OK, boots to a TTY | Default target is still `multi-user.target`, so greetd (`WantedBy=graphical.target`) never starts. Check `systemctl get-default`; the `services` role now sets it to `graphical.target` |
+| Boot appears to hang on GRUB's `Booting 'Fedora Linux …'` line, no login prompt | Almost never a real hang. greetd is `Conflicts=getty@tty1.service`, so if greetd fails to start it takes the getty down with it and nothing redraws the console — leaving GRUB's last message frozen on screen. Fedora boots `rhgb quiet` and a minimal install has no plymouth, so there is nothing else to overwrite it. See "Recovering a machine with no login prompt" below |
+| greetd fails with `configured default session user 'greeter' not found` | The Fedora `greetd` package does not create the `greeter` account that `/etc/greetd/config.toml` names. The `services` role now creates it (system user, home `/var/lib/greetd`, in `video` and `input`) |
 | Playbook OK, still no GUI | `systemctl status greetd`; reboot once |
 | Sway but no audio | Enable pipewire user units after first graphical login |
 | Dotfiles owned by root | Dotfiles role must use `become_user: mathias` (current `site.yml` does) |
+
+### Recovering a machine with no login prompt
+
+Because greetd owns VT1 and stops the getty there, a broken greetd leaves no way in on the default VT. In order of effort:
+
+1. `Ctrl+Alt+F3` — greetd only claims VT1, so another VT still gives a getty.
+2. SSH in. Fedora enables `sshd` and firewalld's default zone permits port 22.
+3. Boot once without greetd: hold `Esc`/`Shift` for the GRUB menu, press `e`, and on the `linux` line delete `rhgb quiet` and append `systemd.unit=multi-user.target`, then `Ctrl+X`. Dropping `quiet` shows whether the kernel is genuinely stuck; `multi-user.target` keeps greetd out of the way. Neither is written to disk.
+
+Then read the actual error — `journalctl -b -1 -u greetd` covers the failed boot rather than the current one:
+
+```bash
+systemctl status greetd
+journalctl -b -1 -u greetd --no-pager
+ls -l /dev/dri          # Sway needs a DRM node; empty means the VM has no usable video device
+systemctl get-default
+```
+
+While iterating on a VM it is worth dropping `quiet` from the kernel command line for good, so a failed boot looks like a failed boot instead of a frozen GRUB message.
 
 ---
 

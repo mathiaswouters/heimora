@@ -10,6 +10,30 @@
       - greetd-tuigreet
     state: present
 
+# The Fedora greetd package does not create this account, but greetd refuses to
+# start without it ("configured default session user 'greeter' not found") and
+# its unit Conflicts=getty@tty1.service — so a missing greeter takes the getty
+# down with it and leaves VT1 dead, which reads as a hung boot.
+- name: Create the greeter account greetd runs the greeter session as
+  ansible.builtin.user:
+    name: greeter
+    system: true
+    home: /var/lib/greetd
+    create_home: true
+    shell: /usr/sbin/nologin
+    groups:
+      - video
+      - input
+    append: true
+
+- name: Give tuigreet a writable state directory
+  ansible.builtin.file:
+    path: /var/cache/tuigreet
+    state: directory
+    owner: greeter
+    group: greeter
+    mode: "0755"
+
 - name: Configure greetd to launch Sway
   ansible.builtin.copy:
     dest: /etc/greetd/config.toml
@@ -26,6 +50,14 @@
   ansible.builtin.systemd:
     name: greetd
     enabled: true
+
+# Starting greetd here to prove it works is not an option: its
+# Conflicts=getty@tty1.service would kill the very console running
+# ansible-pull. Checking that the configured session user resolves is the
+# cheap version of that check, and it is the failure that bit on the VM.
+- name: Confirm the greeter account resolves before handing VT1 to greetd
+  ansible.builtin.command: getent passwd greeter
+  changed_when: false
 
 - name: Read the current default systemd target
   ansible.builtin.command: systemctl get-default
