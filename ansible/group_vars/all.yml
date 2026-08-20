@@ -19,9 +19,10 @@ dotfiles_scopes:
 # COPRs, enabled in the apps role. Fedora proper ships none of these.
 copr_repos:
   - atim/starship
-  - pennbauman/ports        # lf
-  - scottames/ghostty       # the source Ghostty's own docs point at
-  - herzen/davinci-helper   # Fedora installer/patcher; Resolve itself is not redistributable
+  - pennbauman/ports           # lf
+  - scottames/ghostty          # the source Ghostty's own docs point at
+  - herzen/davinci-helper      # Fedora installer/patcher; Resolve itself is not redistributable
+  - alois-has-neurons/caligula # caligula
 
 # cliphist landed in Fedora 44. Older releases need this COPR (enabled in
 # the sway role when ansible_distribution_major_version < 44).
@@ -99,7 +100,7 @@ app_packages:
   - file-roller
   - gvfs
   - geany
-  - caligula
+  - caligula                # from the alois-has-neurons/caligula COPR
   - obs-studio              # RPM Fusion (already enabled in the base role)
   - code                    # Visual Studio Code, Microsoft repo
   - cursor                  # Anysphere yum repo
