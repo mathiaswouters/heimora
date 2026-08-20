@@ -17,6 +17,68 @@
     name: "{{ devops_packages }}"
     state: present
 
+- name: Check whether Bitwarden is already installed
+  ansible.builtin.command: rpm -q bitwarden
+  register: bitwarden_pkg
+  failed_when: false
+  changed_when: false
+
+- name: Ensure a local RPM cache exists
+  ansible.builtin.file:
+    path: /var/cache/heimora
+    state: directory
+    mode: "0755"
+  when: bitwarden_pkg.rc != 0
+
+- name: Download the official Bitwarden desktop RPM
+  ansible.builtin.get_url:
+    url: "{{ bitwarden_rpm_url }}"
+    dest: /var/cache/heimora/Bitwarden.rpm
+    mode: "0644"
+  when: bitwarden_pkg.rc != 0
+
+- name: Install Bitwarden
+  ansible.builtin.dnf:
+    name: /var/cache/heimora/Bitwarden.rpm
+    disable_gpg_check: true
+    state: present
+  when: bitwarden_pkg.rc != 0
+
+- name: Install Flatpak
+  ansible.builtin.dnf:
+    name: flatpak
+    state: present
+
+- name: List system Flatpak remotes
+  ansible.builtin.command: flatpak remotes --system --columns=name
+  register: flatpak_remotes
+  changed_when: false
+
+- name: Add the Flathub remote
+  ansible.builtin.command: >
+    flatpak remote-add --system flathub
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+  when: "'flathub' not in flatpak_remotes.stdout"
+
+- name: List installed Flatpak apps
+  ansible.builtin.command: flatpak list --system --app --columns=application
+  register: flatpak_installed
+  changed_when: false
+
+- name: Install Flatpak apps
+  ansible.builtin.command: >
+    flatpak install -y --noninteractive --system flathub {{ item }}
+  loop: "{{ flatpak_apps }}"
+  when: item not in flatpak_installed.stdout
+
+- name: Add the provision user to docker and nordvpn groups
+  ansible.builtin.user:
+    name: "{{ provision_user }}"
+    groups:
+      - docker
+      - nordvpn
+    append: true
+
 # Guarantee ~/.config exists and belongs to the user before the dotfiles role
 # starts linking into it, since these app tasks run as root.
 - name: Ensure ~/.config exists and is user-owned

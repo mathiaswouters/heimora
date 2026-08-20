@@ -15,8 +15,8 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 - [x] Idle management: **swayidle**
 - [x] Wallpaper: **swaybg** *(alternative: hyprpaper works too, or waypaper as a GUI picker)*
 - [x] Screenshot: **grim** + **slurp** *(alternative: sway's own `swaymsg` combined with grimshot wrapper script)*
-- [x] Clipboard manager: **wl-clipboard** *(add cliphist for clipboard history)*
-- [x] Desktop portal (screen-share, file pickers): **xdg-desktop-portal-wlr**
+- [x] Clipboard manager: **wl-clipboard** + **cliphist** (history picker is `$mod+Shift+v`)
+- [x] Desktop portal (screen-share, file pickers): **xdg-desktop-portal-wlr** + **xdg-desktop-portal-gtk**
 - [x] Polkit agent: **mate-polkit** *(polkit-gnome is orphaned and gone from Fedora; alternative: lxqt-policykit)*
 - [x] Login manager: **greetd** + **tuigreet** *(alternative: SDDM with wayland session, or ly)*
 - [x] Screen brightness control: **brightnessctl**, bound to the `XF86MonBrightness` keys in `sway/config`
@@ -26,8 +26,8 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 
 - [x] Audio stack: **pipewire**, **wireplumber**, **pipewire-pulseaudio**
 - [x] Audio mixer GUI: **pavucontrol** *(alternative: pwvucontrol, native pipewire GUI)*
-- [ ] Bluetooth: **bluez**, **bluez-tools**, plus a UI — `blueman` (GTK) or `bluetuith` (TUI)
-- [ ] Wi-Fi: **iwd** or NetworkManager's built-in wifi backend; **nmtui**/**nmcli** for a quick TUI/CLI, or **networkmanager-applet** if you want a waybar/tray integration
+- [x] Bluetooth: **bluez**, **bluez-tools**, **blueman** (applet in the waybar tray)
+- [x] Wi-Fi: **iwd** + **NetworkManager-wifi**, tray UI **network-manager-applet** (`nm-applet`)
 
 ## Input / device management
 
@@ -37,7 +37,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 ## File management
 
 - [x] Terminal file manager: **lf**, configured in the dotfiles repo and wrapped by a `lf()` shell function that follows the last directory *(alternatives: yazi, ranger, nnn)*
-- [ ] GUI file manager (optional on a tiling setup): **nautilus**, **pcmanfm**, or **thunar**
+- [x] GUI file manager: **thunar** (+ **tumbler**, **thunar-volman**, **thunar-archive-plugin**, **gvfs**)
 
 ## Browsers
 
@@ -68,10 +68,12 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 
 ## Media / graphics
 
-- [ ] Image viewer: `imv` (Wayland-native) or `feh`
+- [x] Image viewer: **imv**
 - [ ] PDF viewer: `zathura` (pairs well with a tiling WM) or `evince`
 - [ ] Video player: `mpv`
 - [ ] Screen recording: `wf-recorder`
+- [x] Video editor: **DaVinci Resolve** — Ansible installs `davinci-helper` and Fedora deps only; you still download the Linux zip from Blackmagic and run the helper. Steps: [README — DaVinci Resolve](README.md#davinci-resolve)
+- [x] Gaming (NVIDIA GTX 1060 / Pascal): RPM Fusion **580xx** driver + **Steam**, **Lutris**, **GameMode**, **MangoHud**, **gamescope**. Skipped on machines without an NVIDIA GPU. See [README — NVIDIA and gaming](README.md#nvidia-and-gaming)
 
 ## Fonts / theming
 

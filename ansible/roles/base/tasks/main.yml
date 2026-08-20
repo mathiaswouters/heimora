@@ -39,6 +39,63 @@
     enabled: true
     exclude: kubelet kubeadm cri-tools kubernetes-cni
 
+- name: Import Microsoft GPG key
+  ansible.builtin.rpm_key:
+    key: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+
+- name: Enable Visual Studio Code repo
+  ansible.builtin.yum_repository:
+    name: code
+    description: Visual Studio Code
+    baseurl: https://packages.microsoft.com/yumrepos/vscode
+    gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+    gpgcheck: true
+    enabled: true
+
+- name: Import Cursor GPG key
+  ansible.builtin.rpm_key:
+    key: https://downloads.cursor.com/keys/anysphere.asc
+    state: present
+
+- name: Enable Cursor repo
+  ansible.builtin.yum_repository:
+    name: cursor
+    description: Cursor
+    baseurl: https://downloads.cursor.com/yumrepo
+    gpgkey: https://downloads.cursor.com/keys/anysphere.asc
+    gpgcheck: true
+    repo_gpgcheck: true
+    enabled: true
+
+- name: Import Docker GPG key
+  ansible.builtin.rpm_key:
+    key: https://download.docker.com/linux/fedora/gpg
+    state: present
+
+- name: Enable Docker CE repo
+  ansible.builtin.yum_repository:
+    name: docker-ce-stable
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/fedora/$releasever/$basearch/stable
+    gpgkey: https://download.docker.com/linux/fedora/gpg
+    gpgcheck: true
+    enabled: true
+
+- name: Import NordVPN GPG key
+  ansible.builtin.rpm_key:
+    key: https://repo.nordvpn.com/gpg/nordvpn_public.asc
+    state: present
+
+- name: Enable NordVPN repo
+  ansible.builtin.yum_repository:
+    name: nordvpn
+    description: NordVPN
+    baseurl: https://repo.nordvpn.com/yum/nordvpn/centos/$basearch/
+    gpgkey: https://repo.nordvpn.com/gpg/nordvpn_public.asc
+    gpgcheck: true
+    enabled: true
+
 - name: Install base packages
   ansible.builtin.dnf:
     name: "{{ base_packages }}"

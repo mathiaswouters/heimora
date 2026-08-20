@@ -1,0 +1,99 @@
+---
+# Proprietary NVIDIA stack for Pascal (GTX 10-series). Skipped on machines
+# without an NVIDIA GPU so the same playbook can provision a VM.
+
+- name: Look for an NVIDIA GPU
+  ansible.builtin.command: lspci
+  register: heimora_lspci
+  changed_when: false
+
+- name: Decide whether to install the NVIDIA stack
+  ansible.builtin.set_fact:
+    heimora_has_nvidia: "{{ heimora_lspci.stdout is search('NVIDIA') }}"
+
+- name: Skip NVIDIA and gaming packages when no GPU is present
+  ansible.builtin.debug:
+    msg: >-
+      No NVIDIA adapter in lspci output — skipping 580xx drivers and
+      gaming packages. On the GTX 1060 box this should not happen.
+  when: not heimora_has_nvidia
+
+- name: Install kernel headers matching the running kernel
+  ansible.builtin.dnf:
+    name: "kernel-devel-uname-r == {{ ansible_kernel }}"
+    state: present
+  when: heimora_has_nvidia
+  register: heimora_kernel_devel
+  ignore_errors: true
+
+- name: Fall back to generic kernel-devel if the running kernel is gone
+  ansible.builtin.dnf:
+    name: kernel-devel
+    state: present
+  when:
+    - heimora_has_nvidia
+    - heimora_kernel_devel.failed | default(false)
+
+- name: Install the RPM Fusion 580xx NVIDIA driver and CUDA/Vulkan bits
+  ansible.builtin.dnf:
+    name: "{{ nvidia_packages }}"
+    state: present
+  when: heimora_has_nvidia
+
+- name: Keep akmod-nvidia-580xx off dnf autoremove
+  ansible.builtin.command: dnf mark user akmod-nvidia-580xx
+  when: heimora_has_nvidia
+  changed_when: false
+
+- name: Check Secure Boot state
+  ansible.builtin.command: mokutil --sb-state
+  register: heimora_secureboot
+  changed_when: false
+  failed_when: false
+  when: heimora_has_nvidia
+
+- name: Warn that Secure Boot will block an unsigned NVIDIA kmod
+  ansible.builtin.debug:
+    msg: >-
+      Secure Boot appears enabled ({{ heimora_secureboot.stdout | default('') | trim }}).
+      Either disable it in firmware, or enrol a MOK and sign the akmod
+      before reboot — otherwise the machine comes up on nouveau or a
+      black screen. See https://rpmfusion.org/Howto/Secure%20Boot
+  when:
+    - heimora_has_nvidia
+    - heimora_secureboot.stdout is defined
+    - heimora_secureboot.stdout is search('enabled')
+
+- name: Wait for akmods to build the nvidia kernel module
+  ansible.builtin.command: modinfo -F version nvidia
+  register: heimora_nvidia_modinfo
+  until: heimora_nvidia_modinfo.rc == 0
+  retries: 36
+  delay: 10
+  changed_when: false
+  failed_when: false
+  when: heimora_has_nvidia
+
+- name: Note if the NVIDIA module is not built yet
+  ansible.builtin.debug:
+    msg: >-
+      akmods has not produced a nvidia.ko yet ({{ heimora_nvidia_modinfo.stderr | default('modinfo failed') | trim }}).
+      Wait for `modinfo nvidia` to print 580.x, then reboot. Do not set
+      nvidia-drm.modeset=1 on the kernel command line — RPM Fusion already
+      enables KMS, and forcing that flag fights Fedora's simpledrm patch.
+  when:
+    - heimora_has_nvidia
+    - heimora_nvidia_modinfo.rc | default(1) != 0
+
+- name: Install gaming packages (Steam, Lutris, GameMode, MangoHud, gamescope)
+  ansible.builtin.dnf:
+    name: "{{ gaming_packages }}"
+    state: present
+  when: heimora_has_nvidia
+
+- name: Add the provision user to the gamemode group
+  ansible.builtin.user:
+    name: "{{ provision_user }}"
+    groups: gamemode
+    append: true
+  when: heimora_has_nvidia

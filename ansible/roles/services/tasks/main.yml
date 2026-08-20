@@ -34,6 +34,24 @@
     group: greeter
     mode: "0755"
 
+- name: Install a greetd wrapper that sets NVIDIA + Sway environment
+  ansible.builtin.copy:
+    dest: /usr/local/bin/heimora-sway
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Launch Sway with the env NVIDIA + wlroots need. greetd runs this
+      # instead of bare `sway` so the variables exist before the compositor.
+      export XDG_CURRENT_DESKTOP=sway
+      export XDG_SESSION_TYPE=wayland
+      if lsmod | grep -q '^nvidia'; then
+        export __GLX_VENDOR_LIBRARY_NAME=nvidia
+        export GBM_BACKEND=nvidia-drm
+        export WLR_NO_HARDWARE_CURSORS=1
+        export LIBVA_DRIVER_NAME=nvidia
+      fi
+      exec sway "$@"
+
 - name: Configure greetd to launch Sway
   ansible.builtin.copy:
     dest: /etc/greetd/config.toml
@@ -42,7 +60,7 @@
       vt = 1
 
       [default_session]
-      command = "tuigreet --time --cmd sway"
+      command = "tuigreet --time --cmd /usr/local/bin/heimora-sway"
       user = "greeter"
     mode: "0644"
 
@@ -50,6 +68,24 @@
   ansible.builtin.systemd:
     name: greetd
     enabled: true
+
+- name: Enable Bluetooth for blueman
+  ansible.builtin.systemd:
+    name: bluetooth
+    enabled: true
+    state: started
+
+- name: Enable and start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Enable and start the NordVPN daemon
+  ansible.builtin.systemd:
+    name: nordvpnd
+    enabled: true
+    state: started
 
 # Starting greetd here to prove it works is not an option: its
 # Conflicts=getty@tty1.service would kill the very console running

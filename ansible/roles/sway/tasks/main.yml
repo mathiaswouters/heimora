@@ -1,4 +1,12 @@
 ---
+# cliphist is in Fedora 44+. On older releases pull it from COPR first so
+# the sway_packages install below does not fail on a missing name.
+- name: Enable cliphist COPR on Fedora older than 44
+  ansible.builtin.command:
+    cmd: dnf copr enable -y {{ cliphist_copr }}
+    creates: "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:{{ cliphist_copr | replace('/', ':') }}.repo"
+  when: ansible_distribution_major_version | int < 44
+
 - name: Install Sway and companion packages
   ansible.builtin.dnf:
     name: "{{ sway_packages }}"

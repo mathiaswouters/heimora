@@ -21,7 +21,7 @@ greetd (tuigreet) → Sway
 - [ ] `https://github.com/mathiaswouters/heimora.git` is public, branch **`main`**, with `ansible/` pushed. `ansible-pull` clones this URL.
 - [ ] `https://github.com/mathiaswouters/dotfiles.git` is cloneable, branch **`master`** (`dotfiles_version` in `ansible/group_vars/all.yml`). If that clone fails, the playbook fails.
 - [ ] That dotfiles branch contains `links.conf`, and every source it lists exists. The `dotfiles` role asserts this and **fails** rather than leaving dangling symlinks. Check locally first with `./scripts/setup.sh --dry-run`.
-- [ ] VM has **network** (NAT is fine). Ansible pulls Fedora packages, RPM Fusion, and GitHub.
+- [ ] VM has **network** (NAT is fine). Ansible pulls Fedora packages, RPM Fusion, and GitHub. NVIDIA 580xx and Steam are skipped unless the VM has an NVIDIA GPU.
 - [ ] Disk **≥ 40 GiB**, RAM **≥ 4 GiB**, **2+ vCPUs**. UEFI is a good match for a laptop later.
 - [ ] The Fedora user you create is **`mathias`** and in **wheel** (`provision_user` in group_vars).
 

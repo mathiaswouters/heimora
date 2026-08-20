@@ -14,18 +14,18 @@ dotfiles_scopes:
   - common
   - wayland
   - ghostty
+  - alacritty
 
-# Seeds ~/.gitconfigs/personal.gitconfig. The committed .gitconfig in the
-# dotfiles repo carries a deliberately invalid address, so this is what makes
-# commits in ~/projects/personal work.
-git_identity_name: "Mathias Wouters"
-git_identity_email: "matiwouters@gmail.com"
-
-# COPRs, enabled in the apps role. Fedora proper ships none of these three.
+# COPRs, enabled in the apps role. Fedora proper ships none of these.
 copr_repos:
   - atim/starship
   - pennbauman/ports        # lf
   - scottames/ghostty       # the source Ghostty's own docs point at
+  - herzen/davinci-helper   # Fedora installer/patcher; Resolve itself is not redistributable
+
+# cliphist landed in Fedora 44. Older releases need this COPR (enabled in
+# the sway role when ansible_distribution_major_version < 44).
+cliphist_copr: alternateved/cliphist
 
 # Core system utilities, not Sway-specific
 base_packages:
@@ -56,19 +56,17 @@ sway_packages:
   - swaybg
   - waybar
   - wofi                     # or: fuzzel, rofi-wayland
-  # Ghostty is the configured terminal (see dotfiles_scopes), but it comes from
-  # a COPR and has a history of startup crashes on new Fedora releases. foot is
-  # tiny and in Fedora proper, so it stays as a way back into a shell.
-  - foot
   - mako                     # notification daemon
   - grim
   - slurp
   - wl-clipboard
+  - cliphist                 # Fedora 44+; COPR on older releases
   - xdg-desktop-portal-wlr
+  - xdg-desktop-portal-gtk   # file pickers for Firefox / Flatpak
+  - playerctl
+  - blueman
+  - network-manager-applet   # nm-applet, sits in the waybar tray
   - brightnessctl
-  # sway/config execs the polkit agent; without it GUI privilege prompts fail.
-  # polkit-gnome was orphaned and is no longer in Fedora, so mate-polkit is the
-  # GTK agent that is still packaged.
   - mate-polkit
   - pipewire
   - pipewire-pulseaudio
@@ -81,6 +79,7 @@ sway_packages:
 app_packages:
   - firefox
   - ghostty                  # from the scottames COPR
+  - alacritty
   - neovim
   - fastfetch
   - starship
@@ -89,12 +88,41 @@ app_packages:
   - fd-find
   - bat
   - jq
-  # .zshrc runs `eval "$(zoxide init zsh)"` unconditionally and defines an lf()
-  # wrapper, so a missing one of these breaks the shell on first login.
   - zoxide
   - lf                       # from the pennbauman/ports COPR
-  - podman
-  - podman-compose
+  - imv
+  - thunar
+  - tumbler                  # Thunar thumbnails
+  - thunar-volman
+  - thunar-archive-plugin
+  - file-roller
+  - gvfs
+  - geany
+  - caligula
+  - obs-studio              # RPM Fusion (already enabled in the base role)
+  - code                    # Visual Studio Code, Microsoft repo
+  - cursor                  # Anysphere yum repo
+  - nordvpn                 # NordVPN CLI + daemon
+  - nordvpn-gui             # official GUI, same NordVPN repo
+  - nodejs
+  - npm
+  - python3
+  - python3-pip
+  - python3-devel
+  - golang
+  # DaVinci Resolve is not in any public repo (Blackmagic login download).
+  # davinci-helper installs deps and runs the .zip you download from
+  # https://www.blackmagicdesign.com/products/davinciresolve
+  - davinci-helper
+  - libxcrypt-compat
+  - mesa-libGLU
+
+# Official RPM, no yum repo. Downloaded once by the apps role.
+bitwarden_rpm_url: "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=rpm"
+
+# Not in Fedora/RPM Fusion. Flathub is added by the apps role.
+flatpak_apps:
+  - com.spotify.Client
 
 # Official pkgs.k8s.io repos are per-minor. Bump this to pick up a new kubectl line.
 # https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
@@ -107,3 +135,36 @@ devops_packages:
   - kubectl                  # from the Kubernetes repo enabled in the base role
   - helm
   - awscli2
+  - podman
+  - podman-compose
+  - docker-ce               # Docker Inc. repo, enabled in the base role
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# GTX 1060 is Pascal. NVIDIA 595+ (Fedora 44's default akmod-nvidia) dropped
+# it; RPM Fusion's 580xx branch is the last that works. Turing+ would use
+# unsuffixed akmod-nvidia instead. The nvidia role only installs these when
+# lspci finds an NVIDIA GPU, so a VM without passthrough skips them.
+nvidia_packages:
+  - kernel-devel
+  - akmods
+  - akmod-nvidia-580xx
+  - xorg-x11-drv-nvidia-580xx
+  - xorg-x11-drv-nvidia-580xx-cuda
+  - xorg-x11-drv-nvidia-580xx-cuda-libs
+  - xorg-x11-drv-nvidia-580xx-libs.i686
+  - vulkan-loader
+  - libva-nvidia-driver
+  - libva-utils
+
+gaming_packages:
+  - steam
+  - lutris
+  - gamemode
+  - gamemode.i686
+  - mangohud
+  - mangohud.i686
+  - vulkan-tools
+  - protontricks

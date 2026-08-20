@@ -128,26 +128,3 @@
     version: master
     depth: 1
     update: false
-
-# .gitconfig has an [includeIf] pointing at this file. Git errors on every
-# command inside ~/projects/personal if the included path does not exist.
-- name: Ensure the per-context git identity directory exists
-  ansible.builtin.file:
-    path: "/home/{{ provision_user }}/.gitconfigs"
-    state: directory
-    owner: "{{ provision_user }}"
-    group: "{{ provision_user }}"
-    mode: "0700"
-
-- name: Seed the personal git identity if absent
-  ansible.builtin.copy:
-    dest: "/home/{{ provision_user }}/.gitconfigs/personal.gitconfig"
-    content: |
-      # Per-context git identity, deliberately not tracked in the dotfiles repo.
-      [user]
-      	name = {{ git_identity_name }}
-      	email = {{ git_identity_email }}
-    owner: "{{ provision_user }}"
-    group: "{{ provision_user }}"
-    mode: "0600"
-    force: false
