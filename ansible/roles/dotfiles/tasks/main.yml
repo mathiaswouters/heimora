@@ -1,0 +1,36 @@
+---
+# Runs as provision_user via become_user in site.yml so cloned files and
+# symlinks are owned by you, not root — even when the playbook is started as root.
+
+- name: Clone dotfiles repo
+  ansible.builtin.git:
+    repo: "{{ dotfiles_repo }}"
+    dest: "{{ dotfiles_dest }}"
+    version: main
+    update: true
+
+# Swap this for `chezmoi apply` or `stow .` if you adopt one of those
+# tools instead of hand-rolled symlinks — see README for the tradeoffs.
+- name: Symlink config directories into ~/.config
+  ansible.builtin.file:
+    src: "{{ dotfiles_dest }}/config/{{ item }}"
+    dest: "/home/{{ provision_user }}/.config/{{ item }}"
+    state: link
+    force: true
+  loop:
+    - sway
+    - waybar
+    - foot
+    - mako
+    - nvim
+
+- name: Symlink shell config files
+  ansible.builtin.file:
+    src: "{{ dotfiles_dest }}/home/{{ item }}"
+    dest: "/home/{{ provision_user }}/{{ item }}"
+    state: link
+    force: true
+  loop:
+    - .zshrc
+    - .gitconfig
+    - .tmux.conf

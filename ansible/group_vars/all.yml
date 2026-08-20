@@ -1,0 +1,71 @@
+---
+# Central place to edit "what gets installed" without touching role logic.
+# Cross-reference with APPS_INVENTORY.md when deciding what belongs here.
+
+provision_user: mathias
+dotfiles_repo: "https://github.com/mathiaswouters/dotfiles.git"
+dotfiles_dest: "/home/{{ provision_user }}/.dotfiles"
+
+# Core system utilities, not Sway-specific
+base_packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - tmux
+  - zsh
+  - htop
+  - btop
+  - unzip
+  - tar
+  - rsync
+  - firewalld
+  - dnf-plugins-core
+  - NetworkManager-wifi
+  - iwd
+  - bluez
+  - bluez-tools
+
+# The Sway ecosystem itself — fill in / trim as you decide on each piece.
+# See APPS_INVENTORY.md for the "what does this category even need" list.
+sway_packages:
+  - sway
+  - swaylock
+  - swayidle
+  - swaybg
+  - waybar
+  - wofi                     # or: fuzzel, rofi-wayland
+  - foot                     # or: alacritty, kitty, wezterm
+  - mako                     # notification daemon
+  - grim
+  - slurp
+  - wl-clipboard
+  - xdg-desktop-portal-wlr
+  - polkit-gnome
+  - brightnessctl
+  - pipewire
+  - pipewire-pulseaudio
+  - wireplumber
+  - pavucontrol
+
+# General desktop / productivity apps — placeholder list, prune to taste
+app_packages:
+  - firefox
+  - neovim
+  - fastfetch
+  - starship
+  - fzf
+  - ripgrep
+  - fd-find
+  - bat
+  - jq
+  - podman
+  - podman-compose
+
+# Cloud/DevOps tooling relevant to your day job — extend freely
+devops_packages:
+  - ansible-core
+  - terraform
+  - kubectl
+  - helm
+  - awscli2

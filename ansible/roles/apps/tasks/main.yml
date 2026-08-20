@@ -1,0 +1,18 @@
+---
+- name: Install general desktop/productivity apps
+  ansible.builtin.dnf:
+    name: "{{ app_packages }}"
+    state: present
+
+- name: Install cloud/devops tooling
+  ansible.builtin.dnf:
+    name: "{{ devops_packages }}"
+    state: present
+
+- name: Install starship prompt config directory
+  ansible.builtin.file:
+    path: "/home/{{ provision_user }}/.config"
+    state: directory
+    owner: "{{ provision_user }}"
+    group: "{{ provision_user }}"
+    mode: "0755"

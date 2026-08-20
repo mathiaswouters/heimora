@@ -1,0 +1,28 @@
+---
+# Anything that needs to happen last: login manager choice, seat/session
+# setup, one-off enablement. Kept separate from `base` so it's easy to
+# see everything that affects "how do I get to a Sway session" in one file.
+
+- name: Install a login manager (greetd + tuigreet, Sway-friendly)
+  ansible.builtin.dnf:
+    name:
+      - greetd
+      - greetd-tuigreet
+    state: present
+
+- name: Configure greetd to launch Sway
+  ansible.builtin.copy:
+    dest: /etc/greetd/config.toml
+    content: |
+      [terminal]
+      vt = 1
+
+      [default_session]
+      command = "tuigreet --time --cmd sway"
+      user = "greeter"
+    mode: "0644"
+
+- name: Enable greetd
+  ansible.builtin.systemd:
+    name: greetd
+    enabled: true

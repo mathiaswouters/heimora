@@ -1,0 +1,24 @@
+---
+- name: Enable RPM Fusion (free + nonfree)
+  ansible.builtin.dnf:
+    name:
+      - "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm"
+      - "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+
+- name: Install base packages
+  ansible.builtin.dnf:
+    name: "{{ base_packages }}"
+    state: present
+
+- name: Set zsh as default shell for provisioning user
+  ansible.builtin.user:
+    name: "{{ provision_user }}"
+    shell: /usr/bin/zsh
+
+- name: Enable firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: true
+    state: started

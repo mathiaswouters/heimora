@@ -1,0 +1,40 @@
+---
+# Entry point. Run with:
+#   ansible-playbook -i inventory.ini site.yml
+#   ansible-playbook -i inventory.ini site.yml --tags sway   # just one role
+#   ansible-playbook -i inventory.ini site.yml --check       # dry run
+#
+# Roles are ordered deliberately: base system/repos first, then the WM
+# stack, then apps, then dotfiles (which may reference configs the
+# previous roles' packages provide), then services/enablement last.
+
+- name: Provision Fedora Sway environment
+  hosts: local
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  pre_tasks:
+    - name: Refresh dnf cache
+      ansible.builtin.dnf:
+        update_cache: true
+      tags: always
+
+  roles:
+    - role: base
+      tags: [base]
+    - role: sway
+      tags: [sway]
+    - role: apps
+      tags: [apps]
+    - role: dotfiles
+      tags: [dotfiles]
+      become: true
+      become_user: "{{ provision_user }}"
+    - role: services
+      tags: [services]
+
+  post_tasks:
+    - name: Done
+      ansible.builtin.debug:
+        msg: "Provisioning complete. Reboot or re-login to a Sway session."

@@ -1,0 +1,21 @@
+---
+- name: Install Sway and companion packages
+  ansible.builtin.dnf:
+    name: "{{ sway_packages }}"
+    state: present
+
+- name: Enable pipewire/wireplumber for the provisioning user
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    scope: user
+    enabled: true
+  loop:
+    - pipewire.socket
+    - wireplumber.service
+  become: false
+  become_user: "{{ provision_user }}"
+  # Note: this only works if a user session/dbus is already available
+  # (e.g. run via `machinectl shell` or after first interactive login).
+  # If it fails during first-boot provisioning, enable it manually once
+  # after your first login instead — see README "known gotchas".
+  ignore_errors: true
