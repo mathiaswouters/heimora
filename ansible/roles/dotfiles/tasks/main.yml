@@ -6,7 +6,7 @@
   ansible.builtin.git:
     repo: "{{ dotfiles_repo }}"
     dest: "{{ dotfiles_dest }}"
-    version: main
+    version: "{{ dotfiles_version }}"
     update: true
 
 # Swap this for `chezmoi apply` or `stow .` if you adopt one of those

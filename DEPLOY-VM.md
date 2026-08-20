@@ -124,7 +124,7 @@ Or `ansible-pull` again (pulls `main` and re-runs). Useful flags: `--tags sway`,
 | Symptom | Likely cause |
 |---------|----------------|
 | `ansible-pull` cannot clone | Repo private, wrong URL, or no network |
-| Playbook fails in `dotfiles` | `dotfiles_repo` missing or not on `main` |
+| Playbook fails in `dotfiles` | `dotfiles_repo` missing or `dotfiles_version` does not match the remote branch |
 | `become` / sudo errors | Ran `ansible-pull` without sudo, or user not in wheel |
 | `hosts` skipped / no hosts matched | Use the command above (`hosts: all`, connection local) |
 | Missing RPM / dnf error | Package name wrong in `group_vars/all.yml`; RPM Fusion not ready on this Fedora |

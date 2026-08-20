@@ -5,6 +5,7 @@
 provision_user: mathias
 dotfiles_repo: "https://github.com/mathiaswouters/dotfiles.git"
 dotfiles_dest: "/home/{{ provision_user }}/.dotfiles"
+dotfiles_version: master
 
 # Core system utilities, not Sway-specific
 base_packages:
