@@ -1,15 +1,20 @@
 ---
-# Entry point. Run with:
-#   ansible-playbook -i inventory.ini site.yml
-#   ansible-playbook -i inventory.ini site.yml --tags sway   # just one role
-#   ansible-playbook -i inventory.ini site.yml --check       # dry run
+# Entry point. After a minimal Fedora install:
+#   sudo dnf install -y ansible-core git
+#   sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git -C main -d /opt/heimora ansible/site.yml
+#
+# Re-run from the checkout later:
+#   sudo ansible-playbook /opt/heimora/ansible/site.yml
+#   sudo ansible-playbook /opt/heimora/ansible/site.yml --tags sway
+#   sudo ansible-playbook /opt/heimora/ansible/site.yml --check
 #
 # Roles are ordered deliberately: base system/repos first, then the WM
 # stack, then apps, then dotfiles (which may reference configs the
 # previous roles' packages provide), then services/enablement last.
 
 - name: Provision Fedora Sway environment
-  hosts: local
+  hosts: all
+  connection: local
   become: true
   vars_files:
     - group_vars/all.yml
