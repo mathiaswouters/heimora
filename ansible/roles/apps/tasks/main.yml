@@ -1,4 +1,9 @@
 ---
+- name: Enable atim/starship COPR
+  ansible.builtin.command:
+    cmd: dnf copr enable -y atim/starship
+    creates: /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:atim:starship.repo
+
 - name: Install general desktop/productivity apps
   ansible.builtin.dnf:
     name: "{{ app_packages }}"
