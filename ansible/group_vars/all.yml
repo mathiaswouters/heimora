@@ -41,7 +41,6 @@ sway_packages:
   - slurp
   - wl-clipboard
   - xdg-desktop-portal-wlr
-  - polkit-gnome
   - brightnessctl
   - pipewire
   - pipewire-pulseaudio
