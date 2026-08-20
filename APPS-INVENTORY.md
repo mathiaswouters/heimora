@@ -17,7 +17,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 - [x] Screenshot: **grim** + **slurp** *(alternative: sway's own `swaymsg` combined with grimshot wrapper script)*
 - [x] Clipboard manager: **wl-clipboard** *(add cliphist for clipboard history)*
 - [x] Desktop portal (screen-share, file pickers): **xdg-desktop-portal-wlr**
-- [x] Polkit agent: **polkit-gnome** *(alternative: lxqt-policykit, or mate-polkit)*
+- [x] Polkit agent: **mate-polkit** *(polkit-gnome is orphaned and gone from Fedora; alternative: lxqt-policykit)*
 - [x] Login manager: **greetd** + **tuigreet** *(alternative: SDDM with wayland session, or ly)*
 - [x] Screen brightness control: **brightnessctl**, bound to the `XF86MonBrightness` keys in `sway/config`
 - [ ] Output/monitor management: `wlr-randr`, or `kanshi` for auto profiles on dock/undock

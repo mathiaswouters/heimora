@@ -67,7 +67,9 @@ sway_packages:
   - xdg-desktop-portal-wlr
   - brightnessctl
   # sway/config execs the polkit agent; without it GUI privilege prompts fail.
-  - polkit-gnome
+  # polkit-gnome was orphaned and is no longer in Fedora, so mate-polkit is the
+  # GTK agent that is still packaged.
+  - mate-polkit
   - pipewire
   - pipewire-pulseaudio
   - wireplumber

@@ -72,6 +72,9 @@ If `fedora42` is unknown: `osinfo-query os | grep -i fedora`.
 Log in as `mathias` on the console. Confirm network (`ping -c1 github.com`). Then:
 
 ```bash
+sudo hostnamctl hostname --static <hostname>
+hostnamectl
+sudo dnf update
 sudo dnf install -y ansible-core git
 sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git \
   -C main \
