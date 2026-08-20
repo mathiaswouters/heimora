@@ -49,6 +49,9 @@ heimora/
 2. Log in, get network, then:
 
 ```bash
+sudo hostnamectl set-hostname --static <hostname>
+hostnamectl
+sudo dnf update
 sudo dnf install -y ansible-core git
 sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git \
   -C main \
