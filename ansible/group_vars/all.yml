@@ -46,6 +46,7 @@ base_packages:
   - iwd
   - bluez
   - bluez-tools
+  - pciutils
 
 # The Sway ecosystem itself — fill in / trim as you decide on each piece.
 # See APPS_INVENTORY.md for the "what does this category even need" list.
