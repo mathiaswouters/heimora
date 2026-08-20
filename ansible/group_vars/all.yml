@@ -7,6 +7,26 @@ dotfiles_repo: "https://github.com/mathiaswouters/dotfiles.git"
 dotfiles_dest: "/home/{{ provision_user }}/.dotfiles"
 dotfiles_version: master
 
+# Which scopes from the dotfiles repo's links.conf apply to this machine.
+# 'common' is everywhere, 'wayland' adds sway/waybar/mako, and the terminal
+# scope picks exactly one of ghostty/alacritty. See links.conf for the full map.
+dotfiles_scopes:
+  - common
+  - wayland
+  - ghostty
+
+# Seeds ~/.gitconfigs/personal.gitconfig. The committed .gitconfig in the
+# dotfiles repo carries a deliberately invalid address, so this is what makes
+# commits in ~/projects/personal work.
+git_identity_name: "Mathias Wouters"
+git_identity_email: "matiwouters@gmail.com"
+
+# COPRs, enabled in the apps role. Fedora proper ships none of these three.
+copr_repos:
+  - atim/starship
+  - pennbauman/ports        # lf
+  - scottames/ghostty       # the source Ghostty's own docs point at
+
 # Core system utilities, not Sway-specific
 base_packages:
   - vim
@@ -36,21 +56,29 @@ sway_packages:
   - swaybg
   - waybar
   - wofi                     # or: fuzzel, rofi-wayland
-  - foot                     # or: alacritty, kitty, wezterm
+  # Ghostty is the configured terminal (see dotfiles_scopes), but it comes from
+  # a COPR and has a history of startup crashes on new Fedora releases. foot is
+  # tiny and in Fedora proper, so it stays as a way back into a shell.
+  - foot
   - mako                     # notification daemon
   - grim
   - slurp
   - wl-clipboard
   - xdg-desktop-portal-wlr
   - brightnessctl
+  # sway/config execs the polkit agent; without it GUI privilege prompts fail.
+  - polkit-gnome
   - pipewire
   - pipewire-pulseaudio
   - wireplumber
   - pavucontrol
+  # ghostty/config and waybar/style.css both ask for JetBrains Mono.
+  - jetbrains-mono-fonts
 
 # General desktop / productivity apps — placeholder list, prune to taste
 app_packages:
   - firefox
+  - ghostty                  # from the scottames COPR
   - neovim
   - fastfetch
   - starship
@@ -59,6 +87,10 @@ app_packages:
   - fd-find
   - bat
   - jq
+  # .zshrc runs `eval "$(zoxide init zsh)"` unconditionally and defines an lf()
+  # wrapper, so a missing one of these breaks the shell on first login.
+  - zoxide
+  - lf                       # from the pennbauman/ports COPR
   - podman
   - podman-compose
 

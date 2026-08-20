@@ -1,6 +1,10 @@
 ---
 # Runs as provision_user via become_user in site.yml so cloned files and
 # symlinks are owned by you, not root — even when the playbook is started as root.
+#
+# What gets linked where is NOT defined here. It comes from links.conf in the
+# dotfiles repo, which scripts/setup.sh reads too, so a Fedora machine
+# provisioned by Ansible and a Mac set up by hand cannot drift apart.
 
 - name: Clone dotfiles repo
   ansible.builtin.git:
@@ -9,28 +13,141 @@
     version: "{{ dotfiles_version }}"
     update: true
 
-# Swap this for `chezmoi apply` or `stow .` if you adopt one of those
-# tools instead of hand-rolled symlinks — see README for the tradeoffs.
-- name: Symlink config directories into ~/.config
-  ansible.builtin.file:
-    src: "{{ dotfiles_dest }}/config/{{ item }}"
-    dest: "/home/{{ provision_user }}/.config/{{ item }}"
-    state: link
-    force: true
-  loop:
-    - sway
-    - waybar
-    - foot
-    - mako
-    - nvim
+- name: Read the dotfiles link manifest
+  ansible.builtin.slurp:
+    src: "{{ dotfiles_dest }}/links.conf"
+  register: dotfiles_manifest_raw
 
-- name: Symlink shell config files
+- name: Strip comments and blank lines from the manifest
+  ansible.builtin.set_fact:
+    dotfiles_manifest_lines: >-
+      {{
+        (dotfiles_manifest_raw.content | b64decode).splitlines()
+        | map('trim')
+        | reject('match', '#')
+        | reject('equalto', '')
+        | list
+      }}
+
+# Catch a typo in links.conf here rather than halfway through linking.
+- name: Verify every manifest line has three columns
+  ansible.builtin.assert:
+    that: item.split() | length == 3
+    fail_msg: >-
+      Malformed line in {{ dotfiles_dest }}/links.conf:
+      {{ item | to_json }}
+      — expected 'scope source destination'.
+    quiet: true
+  loop: "{{ dotfiles_manifest_lines }}"
+
+- name: Parse the manifest into scope/src/dest records
+  ansible.builtin.set_fact:
+    dotfiles_links: >-
+      {{
+        dotfiles_links | default([])
+        + [dict(['scope', 'src', 'dest'] | zip(item.split()))]
+      }}
+  loop: "{{ dotfiles_manifest_lines }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Select the links that apply to this machine
+  ansible.builtin.set_fact:
+    dotfiles_selected: >-
+      {{ dotfiles_links | selectattr('scope', 'in', dotfiles_scopes) | list }}
+
+- name: Show which configs will be linked
+  ansible.builtin.debug:
+    msg: >-
+      Scopes {{ dotfiles_scopes | join(', ') }} select
+      {{ dotfiles_selected | length }} of {{ dotfiles_links | length }} entries.
+
+- name: Stat each selected source in the dotfiles checkout
+  ansible.builtin.stat:
+    path: "{{ dotfiles_dest }}/{{ item.src }}"
+  loop: "{{ dotfiles_selected }}"
+  loop_control:
+    label: "{{ item.src }}"
+  register: dotfiles_src_stat
+
+# `file` with state=link and force=true happily creates a dangling symlink when
+# the source is absent, so a layout mismatch would otherwise leave a green
+# playbook and a broken ~/.zshrc. Fail here instead.
+- name: Fail if a manifest source is missing from the dotfiles repo
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: >-
+      {{ item.item.src }} is listed in links.conf but does not exist in
+      {{ dotfiles_dest }}. Either add it to the dotfiles repo or remove the
+      line from links.conf.
+    quiet: true
+  loop: "{{ dotfiles_src_stat.results }}"
+  loop_control:
+    label: "{{ item.item.src }}"
+
+- name: Create parent directories for the link destinations
   ansible.builtin.file:
-    src: "{{ dotfiles_dest }}/home/{{ item }}"
-    dest: "/home/{{ provision_user }}/{{ item }}"
+    path: "/home/{{ provision_user }}/{{ item }}"
+    state: directory
+    owner: "{{ provision_user }}"
+    group: "{{ provision_user }}"
+    mode: "0755"
+  loop: >-
+    {{ dotfiles_selected | map(attribute='dest') | map('dirname')
+       | reject('equalto', '') | unique | list }}
+
+- name: Link configs out of the dotfiles checkout
+  ansible.builtin.file:
+    src: "{{ dotfiles_dest }}/{{ item.src }}"
+    dest: "/home/{{ provision_user }}/{{ item.dest }}"
     state: link
     force: true
-  loop:
-    - .zshrc
-    - .gitconfig
-    - .tmux.conf
+    follow: false
+  loop: "{{ dotfiles_selected }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+# sway/config includes ~/.config/sway-local/*.conf for per-machine output and
+# input settings, which are deliberately not in git. Create it so the include
+# resolves and there is an obvious place to drop a monitor layout.
+- name: Create the machine-local sway override directory
+  ansible.builtin.file:
+    path: "/home/{{ provision_user }}/.config/sway-local"
+    state: directory
+    owner: "{{ provision_user }}"
+    group: "{{ provision_user }}"
+    mode: "0755"
+  when: "'wayland' in dotfiles_scopes"
+
+# tmux.conf ends with `run '~/.tmux/plugins/tpm/tpm'`. Without TPM every
+# `set -g @plugin` line in that file is silently inert.
+- name: Install the tmux plugin manager
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "/home/{{ provision_user }}/.tmux/plugins/tpm"
+    version: master
+    depth: 1
+    update: false
+
+# .gitconfig has an [includeIf] pointing at this file. Git errors on every
+# command inside ~/projects/personal if the included path does not exist.
+- name: Ensure the per-context git identity directory exists
+  ansible.builtin.file:
+    path: "/home/{{ provision_user }}/.gitconfigs"
+    state: directory
+    owner: "{{ provision_user }}"
+    group: "{{ provision_user }}"
+    mode: "0700"
+
+- name: Seed the personal git identity if absent
+  ansible.builtin.copy:
+    dest: "/home/{{ provision_user }}/.gitconfigs/personal.gitconfig"
+    content: |
+      # Per-context git identity, deliberately not tracked in the dotfiles repo.
+      [user]
+      	name = {{ git_identity_name }}
+      	email = {{ git_identity_email }}
+    owner: "{{ provision_user }}"
+    group: "{{ provision_user }}"
+    mode: "0600"
+    force: false

@@ -36,7 +36,7 @@ heimora/
 │       ├── base/            # repos, shell, firewall, core CLI
 │       ├── sway/            # sway + Wayland companions
 │       ├── apps/            # general + devops packages
-│       ├── dotfiles/        # clone dotfiles repo, symlink configs
+│       ├── dotfiles/        # clone dotfiles repo, symlink per its links.conf
 │       └── services/        # greetd
 ├── README.md
 ├── DEPLOY-VM.md             # first test in a VM
@@ -66,6 +66,21 @@ sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git \
 Create the GitHub repo and push **before** you run this on a machine. The pull URL must be cloneable. The dotfiles role also clones `dotfiles_repo` from `group_vars/all.yml`.
 
 Full VM walkthrough: [DEPLOY-VM.md](DEPLOY-VM.md).
+
+## How dotfiles are wired
+
+This repo does not decide what gets linked where. The [dotfiles repo](https://github.com/mathiaswouters/dotfiles) owns that, in a `links.conf` manifest mapping a source to a destination under `$HOME`, tagged with a scope. The `dotfiles` role reads that file and links every entry whose scope appears in `dotfiles_scopes`:
+
+```yaml
+dotfiles_scopes:
+  - common     # linked everywhere
+  - wayland    # sway, waybar, mako
+  - ghostty    # pick exactly one terminal
+```
+
+The same manifest is read by `scripts/setup.sh` in the dotfiles repo, which is how a Mac set up by hand and a Fedora box provisioned here stay in agreement. To add a config, add it in the dotfiles repo and append one line to `links.conf` — nothing here changes.
+
+The role **fails** if a manifest source does not exist in the checkout. That matters: `ansible.builtin.file` with `state: link` and `force: true` will cheerfully create a dangling symlink, so without the check a layout mismatch produced a green playbook and a machine with no working `~/.zshrc`.
 
 ## Iterating afterwards
 
@@ -98,7 +113,8 @@ Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 - **Why not a custom ISO?** Worth it for distributing to other people or offline installs. For rebuilding your own machine, Ansible + git is less to maintain.
 - **Why `ansible-pull` instead of Kickstart?** You already walk through Anaconda once; Kickstart was another file to keep in sync with disks and secrets. `ansible-pull` is the whole automation after a stock minimal install.
 - **Why Ansible over a bash script?** Idempotency. Re-running `site.yml` is safe; dnf/file modules no-op when the system is already in the desired state.
-- **Why not chezmoi/stow?** The `dotfiles` role uses `file` symlinks. Swap that role for `chezmoi apply` later if you need per-device templates.
+- **Why not chezmoi/stow?** The `dotfiles` role uses `file` symlinks driven by the dotfiles repo's own `links.conf`, so the dotfiles stay usable on macOS and WSL without Ansible. Swap the role for `chezmoi apply` later if you need per-device templating rather than per-device includes.
+- **Why is the terminal Ghostty but `foot` still installed?** Ghostty is not in the Fedora repos and comes from a COPR, and it has a track record of startup crashes on brand-new Fedora releases. `foot` is small, in Fedora proper, and guarantees a way back into a shell if Ghostty will not start.
 
 ## Known gotchas
 
@@ -111,3 +127,7 @@ Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
   ```
 
 - RPM Fusion URLs in the `base` role use `ansible_distribution_major_version`. Check they exist on a very new Fedora.
+- Three packages come from COPRs listed in `copr_repos`: `starship`, `lf`, and `ghostty`. COPRs lag new Fedora releases, so if the playbook fails on one, check that a build exists for your Fedora version before assuming the package name is wrong.
+- The dotfiles' `.zshrc` runs `eval "$(zoxide init zsh)"` unconditionally, so `zoxide` must stay in `app_packages` — without it every new shell opens with an error.
+- On first login zsh clones its own plugins into `~/.config/zsh/plugins`, so the first shell needs network. tmux plugins are installed by pressing `prefix + I` (prefix is `Ctrl+A`) once.
+- Per-machine Sway output settings go in `~/.config/sway-local/*.conf`, created by the dotfiles role. `~/.config/sway` itself is a symlink into the dotfiles repo, so do not edit it in place on a machine.

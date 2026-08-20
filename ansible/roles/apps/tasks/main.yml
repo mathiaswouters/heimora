@@ -1,8 +1,11 @@
 ---
-- name: Enable atim/starship COPR
+# starship, lf and ghostty are all absent from the Fedora repos. The `creates`
+# path is the file dnf drops per COPR, which keeps this idempotent.
+- name: Enable COPR repositories
   ansible.builtin.command:
-    cmd: dnf copr enable -y atim/starship
-    creates: /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:atim:starship.repo
+    cmd: "dnf copr enable -y {{ item }}"
+    creates: "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:{{ item | replace('/', ':') }}.repo"
+  loop: "{{ copr_repos }}"
 
 - name: Install general desktop/productivity apps
   ansible.builtin.dnf:
@@ -14,7 +17,9 @@
     name: "{{ devops_packages }}"
     state: present
 
-- name: Install starship prompt config directory
+# Guarantee ~/.config exists and belongs to the user before the dotfiles role
+# starts linking into it, since these app tasks run as root.
+- name: Ensure ~/.config exists and is user-owned
   ansible.builtin.file:
     path: "/home/{{ provision_user }}/.config"
     state: directory

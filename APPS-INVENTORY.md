@@ -9,8 +9,8 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 - [x] Compositor: **sway**
 - [x] Status bar: **waybar** *(alternative: yambar, i3status-rs)*
 - [x] Application launcher: **wofi** *(alternatives: fuzzel, rofi-wayland, tofi)*
-- [x] Terminal emulator: **foot** *(alternatives: alacritty, kitty, wezterm, ghostty)*
-- [x] Notification daemon: **mako** *(alternative: swaync, dunst — mako is Wayland-native)*
+- [x] Terminal emulator: **ghostty** (configured, from COPR) with **foot** installed as a fallback *(alternatives: alacritty, kitty, wezterm)*
+- [x] Notification daemon: **mako** *(alternative: swaync, dunst — mako is Wayland-native)*, configured and offset below waybar
 - [x] Screen locker: **swaylock** *(alternative: gtklock)*
 - [x] Idle management: **swayidle**
 - [x] Wallpaper: **swaybg** *(alternative: hyprpaper works too, or waypaper as a GUI picker)*
@@ -19,7 +19,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 - [x] Desktop portal (screen-share, file pickers): **xdg-desktop-portal-wlr**
 - [x] Polkit agent: **polkit-gnome** *(alternative: lxqt-policykit, or mate-polkit)*
 - [x] Login manager: **greetd** + **tuigreet** *(alternative: SDDM with wayland session, or ly)*
-- [ ] Screen brightness control: **brightnessctl** — needed if laptop
+- [x] Screen brightness control: **brightnessctl**, bound to the `XF86MonBrightness` keys in `sway/config`
 - [ ] Output/monitor management: `wlr-randr`, or `kanshi` for auto profiles on dock/undock
 
 ## Audio / Bluetooth / Network
@@ -36,7 +36,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 
 ## File management
 
-- [ ] Terminal file manager: **yazi** *(alternatives: lf, ranger, nnn)*
+- [x] Terminal file manager: **lf**, configured in the dotfiles repo and wrapped by a `lf()` shell function that follows the last directory *(alternatives: yazi, ranger, nnn)*
 - [ ] GUI file manager (optional on a tiling setup): **nautilus**, **pcmanfm**, or **thunar**
 
 ## Browsers
@@ -50,6 +50,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 - [x] Prompt: **starship**
 - [x] Multiplexer: **tmux** *(alternative: zellij, which has more Sway-like tiling ergonomics)*
 - [x] Fuzzy finder: **fzf**
+- [x] Directory jumper: **zoxide** — required, `.zshrc` initialises it unconditionally
 - [x] Better grep: **ripgrep**
 - [x] Better find: **fd-find**
 - [x] Better cat: **bat**
@@ -62,7 +63,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 ## Editors / IDE
 
 - [x] **neovim**
-- [ ] Editor config framework if you want batteries-included Neovim: LazyVim, AstroNvim, or your own config in dotfiles
+- [x] Editor config framework: own Lua config in the dotfiles repo, using the Lazy plugin manager
 - [ ] GUI editor/IDE if needed alongside terminal editing: VS Code (via Microsoft repo, not in Fedora repos directly)
 
 ## Media / graphics
@@ -74,7 +75,7 @@ Legend: pre-filled in the playbook skeleton already · suggested alternatives in
 
 ## Fonts / theming
 
-- [ ] Nerd Font(s) for icons in waybar/terminal/wofi — pick one, e.g. `jetbrains-mono-fonts` + a patched Nerd Font variant, or install via `fontconfig` + manual download in dotfiles
+- [x] **jetbrains-mono-fonts**, which `ghostty/config`, `waybar/style.css` and `mako/config` all request. The waybar config uses plain Unicode rather than Nerd Font private-use glyphs, so a patched Nerd Font is optional rather than required
 - [ ] GTK theme + icon theme (even in a mostly-terminal setup, file pickers/portals use GTK): pick one, e.g. `adwaita-icon-theme` as a safe baseline
 - [ ] Qt theme integration if you run any Qt apps: `qt5ct`/`qt6ct` + `qt5-qtwayland`/`qt6-qtwayland`
 

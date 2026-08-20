@@ -19,7 +19,8 @@ greetd (tuigreet) → Sway
 ## 0. Checklist
 
 - [ ] `https://github.com/mathiaswouters/heimora.git` is public, branch **`main`**, with `ansible/` pushed. `ansible-pull` clones this URL.
-- [ ] `https://github.com/mathiaswouters/dotfiles.git` is cloneable (`ansible/group_vars/all.yml`). If that clone fails, the playbook fails.
+- [ ] `https://github.com/mathiaswouters/dotfiles.git` is cloneable, branch **`master`** (`dotfiles_version` in `ansible/group_vars/all.yml`). If that clone fails, the playbook fails.
+- [ ] That dotfiles branch contains `links.conf`, and every source it lists exists. The `dotfiles` role asserts this and **fails** rather than leaving dangling symlinks. Check locally first with `./scripts/setup.sh --dry-run`.
 - [ ] VM has **network** (NAT is fine). Ansible pulls Fedora packages, RPM Fusion, and GitHub.
 - [ ] Disk **≥ 40 GiB**, RAM **≥ 4 GiB**, **2+ vCPUs**. UEFI is a good match for a laptop later.
 - [ ] The Fedora user you create is **`mathias`** and in **wheel** (`provision_user` in group_vars).
@@ -93,9 +94,16 @@ sudo ansible-playbook /opt/heimora/ansible/site.yml -vv
 ## 4. What “done” looks like
 
 1. Reboot or log out so **greetd** can take the TTY.
-2. **tuigreet** logs you in and starts **Sway**.
-3. User shell is **zsh** (`base` role).
+2. **tuigreet** logs you in and starts **Sway**, with **waybar** across the top.
+3. User shell is **zsh** (`base` role), with the starship prompt and no startup errors.
 4. Dotfiles under `/home/mathias` are owned by `mathias`, not root.
+5. Every link resolves — this should print nothing:
+
+```bash
+find -L ~/.config ~/.zshrc ~/.gitconfig -maxdepth 2 -type l ! -exec test -e {} \; -print
+```
+
+6. `Super+Return` opens Ghostty, `Super+D` opens the wofi launcher.
 
 Pipewire user units often do not enable during `ansible-pull` (no user D-Bus). After you are in Sway:
 
@@ -125,6 +133,12 @@ Or `ansible-pull` again (pulls `main` and re-runs). Useful flags: `--tags sway`,
 |---------|----------------|
 | `ansible-pull` cannot clone | Repo private, wrong URL, or no network |
 | Playbook fails in `dotfiles` | `dotfiles_repo` missing or `dotfiles_version` does not match the remote branch |
+| `dotfiles` fails on "listed in links.conf but missing" | The manifest references a config that is not in the dotfiles repo. Add the file or drop the line — this check is what stops a broken `~/.zshrc` shipping silently |
+| `dotfiles` fails on "Malformed line" | A `links.conf` line does not have exactly three whitespace-separated columns |
+| New shell prints a `zoxide`/`starship` error | Those packages are missing; `.zshrc` initialises both unconditionally |
+| Playbook fails enabling a COPR | No build for this Fedora version yet in `starship`, `lf` or `ghostty`'s COPR |
+| Sway starts but Ghostty will not open | Known COPR/Fedora issue. `foot` is installed for exactly this case — start it, then debug |
+| Boxes instead of glyphs in waybar | `jetbrains-mono-fonts` missing, or the font cache is stale (`fc-cache -f`) |
 | `become` / sudo errors | Ran `ansible-pull` without sudo, or user not in wheel |
 | `hosts` skipped / no hosts matched | Use the command above (`hosts: all`, connection local) |
 | Missing RPM / dnf error | Package name wrong in `group_vars/all.yml`; RPM Fusion not ready on this Fedora |
