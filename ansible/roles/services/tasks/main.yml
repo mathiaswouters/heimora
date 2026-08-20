@@ -26,3 +26,16 @@
   ansible.builtin.systemd:
     name: greetd
     enabled: true
+
+- name: Read the current default systemd target
+  ansible.builtin.command: systemctl get-default
+  register: systemd_default_target
+  changed_when: false
+
+# A minimal Fedora install boots to multi-user.target, and greetd is only
+# WantedBy=graphical.target — so enabling greetd alone still drops you at a
+# TTY. Without this the whole login-manager chain silently never starts.
+- name: Boot into graphical.target so greetd starts
+  ansible.builtin.command: systemctl set-default graphical.target
+  when: systemd_default_target.stdout | trim != "graphical.target"
+  changed_when: true

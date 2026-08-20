@@ -128,6 +128,7 @@ Or `ansible-pull` again (pulls `main` and re-runs). Useful flags: `--tags sway`,
 | `become` / sudo errors | Ran `ansible-pull` without sudo, or user not in wheel |
 | `hosts` skipped / no hosts matched | Use the command above (`hosts: all`, connection local) |
 | Missing RPM / dnf error | Package name wrong in `group_vars/all.yml`; RPM Fusion not ready on this Fedora |
+| Playbook OK, boots to a TTY | Default target is still `multi-user.target`, so greetd (`WantedBy=graphical.target`) never starts. Check `systemctl get-default`; the `services` role now sets it to `graphical.target` |
 | Playbook OK, still no GUI | `systemctl status greetd`; reboot once |
 | Sway but no audio | Enable pipewire user units after first graphical login |
 | Dotfiles owned by root | Dotfiles role must use `become_user: mathias` (current `site.yml` does) |

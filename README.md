@@ -103,6 +103,7 @@ Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 ## Known gotchas
 
 - Run `ansible-pull` with **sudo**. The playbook uses `become` with `become_ask_pass = False`.
+- A minimal Fedora install boots to `multi-user.target`. Enabling greetd is not enough on its own, because greetd is `WantedBy=graphical.target` — you would reboot straight back into a TTY. The `services` role runs `systemctl set-default graphical.target` to fix that. Verify with `systemctl get-default`.
 - `pipewire` / `wireplumber` user units need a user D-Bus session. That usually is not there during `ansible-pull`. The tasks use `ignore_errors`. After the first Sway login:
 
   ```bash
