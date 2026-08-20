@@ -61,10 +61,14 @@ app_packages:
   - podman
   - podman-compose
 
+# Official pkgs.k8s.io repos are per-minor. Bump this to pick up a new kubectl line.
+# https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+kubernetes_yum_minor: "v1.36"
+
 # Cloud/DevOps tooling relevant to your day job — extend freely
 devops_packages:
   - ansible-core
-  - terraform
-  - kubectl
+  - terraform                # from the HashiCorp repo enabled in the base role
+  - kubectl                  # from the Kubernetes repo enabled in the base role
   - helm
   - awscli2
