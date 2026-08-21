@@ -75,11 +75,36 @@
     - heimora_grub_default.stat.exists
     - not (grub_theme | bool)
 
-- name: Use gfxterm so the colour theme can render
+- name: Use gfxterm so the graphical theme can render
   ansible.builtin.lineinfile:
     path: /etc/default/grub
     regexp: '^#?\s*GRUB_TERMINAL_OUTPUT='
     line: 'GRUB_TERMINAL_OUTPUT="gfxterm"'
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+- name: Check the requested theme resolution is one we ship a background for
+  ansible.builtin.assert:
+    that: grub_theme_screen in heimora_grub_gfxmodes
+    fail_msg: >-
+      grub_theme_screen={{ grub_theme_screen }} has no background. Known:
+      {{ heimora_grub_gfxmodes.keys() | join(', ') }}.
+    quiet: true
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+# Unlike the old colour-only theme, Vimix draws a fixed-size background, so GRUB
+# has to be in the resolution that background was rendered for. This is
+# GRUB_GFXMODE (the menu's own mode) and NOT GRUB_GFXPAYLOAD_LINUX, which is
+# what hands a mode to the kernel and fights Fedora's simpledrm on NVIDIA.
+- name: Match GRUB's video mode to the theme background
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_GFXMODE='
+    line: 'GRUB_GFXMODE="{{ heimora_grub_gfxmodes[grub_theme_screen] }}"'
   notify: Rebuild GRUB configuration
   when:
     - heimora_grub_default.stat.exists
@@ -90,6 +115,18 @@
     src: theme/
     dest: "{{ grub_theme_path | dirname }}/"
     directory_mode: "0755"
+    mode: "0644"
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+# theme.txt hardcodes desktop-image: "background.jpg", so the chosen resolution's
+# background is installed under that name rather than being selected at boot.
+- name: Install the theme background for the configured resolution
+  ansible.builtin.copy:
+    src: "theme-assets/background-{{ grub_theme_screen }}.jpg"
+    dest: "{{ grub_theme_path | dirname }}/background.jpg"
     mode: "0644"
   notify: Rebuild GRUB configuration
   when:

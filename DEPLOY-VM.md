@@ -174,6 +174,8 @@ systemctl get-default
 
 The `bootloader` role already drops `rhgb` and `quiet` from GRUB and the Boot Loader Spec entries, so a failed boot prints kernel messages instead of freezing on GRUB's last line. Tune timeout, theme, and extra args in `ansible/group_vars/all.yml`.
 
+The GRUB theme's background is rendered per resolution, so `grub_theme_screen` there also sets `GRUB_GFXMODE`. It defaults to `ultrawide` for the 2560x1080 panel; a VM whose virtual display cannot do that mode falls through the list to `1920x1080` and then `auto`, so the menu stays readable rather than going black. Press `c` at the GRUB menu and run `videoinfo` to see what a given machine actually offers.
+
 ---
 
 ## 6. After the VM works

@@ -1,0 +1,9 @@
+---
+# Screen variants the vendored Vimix theme ships a background for, mapped to the
+# GRUB_GFXMODE that matches. Both list fallbacks: if the firmware's video BIOS
+# does not report the preferred mode, GRUB walks the list rather than dropping to
+# a mode the background does not cover. Adding a key here means adding a
+# files/theme-assets/background-<key>.jpg to match — see that directory's README.
+heimora_grub_gfxmodes:
+  1080p: "1920x1080,auto"
+  ultrawide: "2560x1080,1920x1080,auto"

@@ -1,30 +1,55 @@
-# Heimora GRUB theme. Colour-only so we do not need .pf2 fonts or a PNG.
-# gfxterm fills desktop-color; the kernel is started with the default payload
-# (do not set GRUB_GFXPAYLOAD_LINUX=keep — that fights NVIDIA simpledrm).
+# Vimix, from vinceliuice/grub2-themes (GPL-3.0; see ../theme-assets/LICENSE).
+# Vendored instead of running upstream's install.sh, which targets /boot/grub
+# and rewrites /etc/default/grub behind Ansible's back.
+#
+# Percentage-based layout, so this one file serves both the 1080p and the
+# ultrawide background. background.jpg is not here — the role picks
+# ../theme-assets/background-{{ grub_theme_screen }}.jpg and installs it
+# under that name.
 
-desktop-color: "#0a1628"
+# Global Property
 title-text: "Heimora"
-title-color: "#8ecae6"
+desktop-image: "background.jpg"
+desktop-color: "#000000"
+terminal-font: "Terminus Regular 14"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "0"
 
+# Show the boot menu
 + boot_menu {
-  left = 18%
-  width = 64%
-  top = 26%
-  height = 42%
-  item_color = "#e0e6ed"
-  selected_item_color = "#0a1628"
-  selected_item_bg_color = "#8ecae6"
+  left = 30%
+  top = 30%
+  width = 40%
+  height = 40%
+  item_font = "Unifont Regular 16"
+  item_color = "#cccccc"
+  selected_item_color = "#ffffff"
+  icon_width = 32
+  icon_height = 32
+  item_icon_space = 20
   item_height = 36
-  item_padding = 12
-  item_spacing = 8
+  item_padding = 5
+  item_spacing = 10
+  selected_item_pixmap_style = "select_*.png"
 }
 
++ image {
+  top = 100%-50
+  left = 50%-240
+  width = 480
+  height = 42
+  file = "info.png"
+}
+
+# Show a countdown message using the label component
 + label {
-  id = "__timeout__"
-  left = 18%
-  top = 74%
-  width = 64%
+  top = 82%
+  left = 32%
+  width = 36%
   align = "center"
-  color = "#8ecae6"
+  id = "__timeout__"
   text = "Booting in %d seconds"
+  color = "#cccccc"
+  font = "Unifont Regular 16"
 }

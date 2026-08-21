@@ -36,6 +36,12 @@ grub_timeout_style: menu
 grub_distributor: Heimora
 grub_theme: true
 grub_theme_path: /boot/grub2/themes/heimora/theme.txt
+# Vimix, vendored from vinceliuice/grub2-themes — see the README next to
+# ansible/roles/bootloader/files/theme-assets/. Unlike the old colour-only
+# theme this one has a fixed-size background, so the resolution picks both the
+# background and GRUB_GFXMODE. 'ultrawide' is 2560x1080, '1080p' is 1920x1080;
+# both fall back to 1920x1080/auto, so the VM survives either setting.
+grub_theme_screen: ultrawide
 # rhgb quiet on a plymouth-less minimal install is why a broken greetd looks
 # like a hung "Booting 'Fedora Linux …'" screen. See DEPLOY-VM.md.
 grub_remove_kernel_args:
