@@ -1,0 +1,11 @@
+# Bytecode from running the helper scripts in ansible/roles/*/files by hand
+__pycache__/
+*.py[cod]
+
+# ansible-playbook --force-handlers writes these next to the playbook
+*.retry
+
+# Editor / OS scratch files
+*.swp
+*~
+.DS_Store

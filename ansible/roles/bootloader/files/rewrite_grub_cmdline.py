@@ -29,8 +29,14 @@ def main() -> int:
     def repl(match: re.Match[str]) -> str:
         args = [a for a in match.group(2).split() if a not in drop]
         for token in extra:
-            if token not in args:
-                args.append(token)
+            if token in args:
+                continue
+            # An extra like loglevel=5 must supersede any loglevel= already on
+            # the line, or both end up there and only the last one takes effect.
+            key = token.split("=", 1)[0] + "=" if "=" in token else None
+            if key:
+                args = [a for a in args if not a.startswith(key)]
+            args.append(token)
         return f'{match.group(1)}"{" ".join(args)}"'
 
     new, count = pattern.subn(repl, text, count=1)

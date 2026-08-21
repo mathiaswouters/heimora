@@ -41,7 +41,12 @@ grub_theme_path: /boot/grub2/themes/heimora/theme.txt
 grub_remove_kernel_args:
   - rhgb
   - quiet
-grub_extra_kernel_args: []
+# loglevel=5 keeps err/warning on the console — the reason quiet is stripped —
+# but drops notice/info, which otherwise paint over tuigreet on VT1. The
+# "bridge: filtering via arp/ip/ip6tables is no longer available by default"
+# line the bridge module prints when Docker brings up docker0 is one of those.
+grub_extra_kernel_args:
+  - loglevel=5
 
 # Core system utilities, not Sway-specific
 base_packages:
