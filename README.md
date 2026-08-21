@@ -20,7 +20,7 @@ greetd (tuigreet) → Sway, dotfiles linked
 | OS install | Fedora Everything ISO + Anaconda | Disk, user, network, a bootable base |
 | Environment | Ansible (`ansible-pull` / `ansible-playbook`) | Sway, apps, dotfiles, greetd, GRUB — idempotent and re-runnable |
 
-This stops short of a custom ISO. Package and config changes are git commits, not a rebuilt image.
+This stops short of a custom ISO. Anything you want to still have after a reinstall is a git commit, not a rebuilt image. You can still poke at the live machine; see [Living with the machine](#living-with-the-machine).
 
 ## Repo layout
 
@@ -89,25 +89,58 @@ The same manifest is read by `scripts/setup.sh` in the dotfiles repo, which is h
 
 The role **fails** if a manifest source does not exist in the checkout. That matters: `ansible.builtin.file` with `state: link` and `force: true` will cheerfully create a dangling symlink, so without the check a layout mismatch produced a green playbook and a machine with no working `~/.zshrc`.
 
-## Iterating afterwards
+## Living with the machine
+
+You do **not** have to open this repo for every `dnf install` or one-off tweak. Heimora is the *desired* state for a rebuild, not a lock that freezes the running system.
+
+Use the live machine for trying things. When you decide something should stick (next Fedora install, or the other box), put it in git and re-run Ansible.
+
+| Kind of change | Do it live? | Make it durable |
+|----------------|-------------|-----------------|
+| Try a package | `sudo dnf install foo` | Add `foo` to the right list in `ansible/group_vars/all.yml`, commit, re-run with `--tags apps` (or `sway` / `base`) |
+| Try a Flatpak | `flatpak install flathub …` | Append the app id to `flatpak_apps` in `group_vars` |
+| Shell / Sway / nvim / waybar / Ghostty | Edit the file under `~/.dotfiles` (those paths are already symlinks) | Commit and push the [dotfiles](https://github.com/mathiaswouters/dotfiles) repo. No heimora change unless you add a *new* file — then one line in `links.conf` |
+| This machine only (monitors, scale) | `~/.config/sway-local/*.conf` | Leave it. That directory is created by Ansible and is **not** in git |
+| greetd, GRUB, firewall, repos, COPRs | Avoid editing `/etc` by hand | Change the matching role or `group_vars`, commit, re-run the tagged role |
+| Remove a package you no longer want | `sudo dnf remove foo` | Delete it from `group_vars` **and** remove it by hand (or add a `state: absent` task). Lists only install; they never uninstall leftovers |
+
+Ansible uses `state: present`. Re-running the playbook will **not** delete packages you installed by hand. It **will** overwrite files it owns (`/etc/greetd/config.toml`, GRUB, `heimora-sway`, and every symlink in the dotfiles role with `force: true`). If you edit `~/.config/sway` on the machine you are editing a symlink into `~/.dotfiles`; if you replace that symlink with a real file, the next `--tags dotfiles` run puts the link back.
+
+### Day-to-day loop
+
+1. Change the right repo (this one for packages/system, [dotfiles](https://github.com/mathiaswouters/dotfiles) for user config). Prefer your normal checkout (`~/projects/personal/heimora`), not `/opt/heimora` — that tree is root-owned from `ansible-pull`.
+2. Commit and push.
+3. On the Fedora box:
 
 ```bash
 cd /opt/heimora
 sudo git pull
-sudo ansible-playbook ansible/site.yml
+sudo ansible-playbook ansible/site.yml --tags apps    # or sway, bootloader, dotfiles, …
 ```
 
-Or pull and run in one step again:
+If you already have a user clone of this repo on the machine, run the playbook from there instead:
+
+```bash
+cd ~/projects/personal/heimora
+git pull
+sudo ansible-playbook ansible/site.yml --tags apps
+```
+
+Or pull and apply in one step:
 
 ```bash
 sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git -C main -d /opt/heimora ansible/site.yml
 ```
 
+Dotfile edits that are only content (not new links) apply as soon as you save; Sway may need `$mod+Shift+c` to reload. Re-run `--tags dotfiles` when you want Ansible to `git pull` `~/.dotfiles` or to create a new symlink from `links.conf`.
+
 Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 
-- `--tags sway` — only the sway role
-- `--tags bootloader` — only GRUB timeout, theme, and kernel args
-- `--tags nvidia` — only the 580xx driver and gaming packages
+- `--tags apps` — packages, COPRs, Flatpaks
+- `--tags sway` — the compositor stack
+- `--tags dotfiles` — clone/update `~/.dotfiles` and refresh links
+- `--tags bootloader` — GRUB timeout, theme, kernel args
+- `--tags nvidia` — 580xx driver and gaming packages
 - `--check` — dry run
 - `-vv` — verbose
 
@@ -133,12 +166,6 @@ Defaults in `ansible/group_vars/all.yml`:
 - `grub_extra_kernel_args: []` — add tokens here if you need them. Do **not** add `nvidia-drm.modeset=1`.
 
 `--tags bootloader` re-runs only this role. A change to `/etc/default/grub` or the theme rebuilds `grub.cfg` via a handler.
-
-## Adding a new app
-
-1. Pick a category in `APPS-INVENTORY.md`.
-2. Add the package name to the matching list in `ansible/group_vars/all.yml`.
-3. Re-run the playbook (or `--tags apps` / `--tags sway`).
 
 ## DaVinci Resolve
 
