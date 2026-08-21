@@ -28,6 +28,21 @@ copr_repos:
 # the sway role when ansible_distribution_major_version < 44).
 cliphist_copr: alternateved/cliphist
 
+# GRUB. Fedora already installed it in Anaconda; this only restyles it and
+# edits kernel args. Never put nvidia-drm.modeset=1 in grub_extra_kernel_args
+# — RPM Fusion already enables KMS, and that flag fights Fedora's simpledrm.
+grub_timeout: 5
+grub_timeout_style: menu
+grub_distributor: Heimora
+grub_theme: true
+grub_theme_path: /boot/grub2/themes/heimora/theme.txt
+# rhgb quiet on a plymouth-less minimal install is why a broken greetd looks
+# like a hung "Booting 'Fedora Linux …'" screen. See DEPLOY-VM.md.
+grub_remove_kernel_args:
+  - rhgb
+  - quiet
+grub_extra_kernel_args: []
+
 # Core system utilities, not Sway-specific
 base_packages:
   - vim

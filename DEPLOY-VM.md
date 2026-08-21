@@ -172,7 +172,7 @@ ls -l /dev/dri          # Sway needs a DRM node; empty means the VM has no usabl
 systemctl get-default
 ```
 
-While iterating on a VM it is worth dropping `quiet` from the kernel command line for good, so a failed boot looks like a failed boot instead of a frozen GRUB message.
+The `bootloader` role already drops `rhgb` and `quiet` from GRUB and the Boot Loader Spec entries, so a failed boot prints kernel messages instead of freezing on GRUB's last line. Tune timeout, theme, and extra args in `ansible/group_vars/all.yml`.
 
 ---
 

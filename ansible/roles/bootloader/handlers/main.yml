@@ -1,0 +1,8 @@
+---
+- name: Rebuild GRUB configuration
+  ansible.builtin.command:
+    argv:
+      - grub2-mkconfig
+      - -o
+      - "{{ heimora_grub_cfg }}"
+  when: heimora_grub_cfg is defined

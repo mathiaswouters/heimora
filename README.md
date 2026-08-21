@@ -10,7 +10,7 @@ Minimal Fedora Everything install (Anaconda, by hand)
         │  sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git …
         ▼
 ansible/site.yml
-        │  base → sway → apps → dotfiles → services
+        │  base → bootloader → nvidia → sway → apps → dotfiles → services
         ▼
 greetd (tuigreet) → Sway, dotfiles linked
 ```
@@ -18,7 +18,7 @@ greetd (tuigreet) → Sway, dotfiles linked
 | Layer | Tool | Responsibility |
 |-------|------|----------------|
 | OS install | Fedora Everything ISO + Anaconda | Disk, user, network, a bootable base |
-| Environment | Ansible (`ansible-pull` / `ansible-playbook`) | Sway, apps, dotfiles, greetd — idempotent and re-runnable |
+| Environment | Ansible (`ansible-pull` / `ansible-playbook`) | Sway, apps, dotfiles, greetd, GRUB — idempotent and re-runnable |
 
 This stops short of a custom ISO. Package and config changes are git commits, not a rebuilt image.
 
@@ -34,6 +34,7 @@ heimora/
 │   │   └── all.yml          # package lists — edit this most
 │   └── roles/
 │       ├── base/            # repos, shell, firewall, core CLI
+│       ├── bootloader/      # GRUB menu, theme, kernel args (drops rhgb quiet)
 │       ├── sway/            # sway + Wayland companions
 │       ├── nvidia/          # GTX 1060 / Pascal 580xx driver + Steam (skipped without a GPU)
 │       ├── apps/            # general + devops packages
@@ -101,9 +102,23 @@ sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git -C main -d /o
 Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 
 - `--tags sway` — only the sway role
+- `--tags bootloader` — only GRUB timeout, theme, and kernel args
 - `--tags nvidia` — only the 580xx driver and gaming packages
 - `--check` — dry run
 - `-vv` — verbose
+
+## GRUB
+
+The `bootloader` role restyles Fedora's GRUB (timeout, a colour-only Heimora theme, distributor name) and edits kernel args **without** rewriting the `root=` / `rd.luks` line Anaconda wrote.
+
+Defaults in `ansible/group_vars/all.yml`:
+
+- `grub_timeout: 5` and `grub_timeout_style: menu` — the menu is visible, not hidden.
+- `grub_remove_kernel_args: [rhgb, quiet]` — a broken greetd then prints kernel messages instead of freezing on GRUB's last line.
+- `grub_theme: true` — set `false` if gfxterm misbehaves (unusual; GRUB runs before the NVIDIA driver).
+- `grub_extra_kernel_args: []` — add tokens here if you need them. Do **not** add `nvidia-drm.modeset=1`.
+
+`--tags bootloader` re-runs only this role. A change to `/etc/default/grub` or the theme rebuilds `grub.cfg` via a handler.
 
 ## Adding a new app
 
@@ -167,7 +182,7 @@ gamemoderun gamescope -f -- %command%
 
 - Run `ansible-pull` with **sudo**. The playbook uses `become` with `become_ask_pass = False`.
 - A minimal Fedora install boots to `multi-user.target`. Enabling greetd is not enough on its own, because greetd is `WantedBy=graphical.target` — you would reboot straight back into a TTY. The `services` role runs `systemctl set-default graphical.target` to fix that. Verify with `systemctl get-default`.
-- greetd's unit is `Conflicts=getty@tty1.service`, so a greetd that fails to start also takes down the only getty you would have used to debug it. With Fedora's `rhgb quiet` and no plymouth on a minimal install, the result is GRUB's `Booting …` message frozen on screen and a machine that looks hung but is running fine. `Ctrl+Alt+F3` or SSH gets you in; see [DEPLOY-VM.md](DEPLOY-VM.md#recovering-a-machine-with-no-login-prompt).
+- greetd's unit is `Conflicts=getty@tty1.service`, so a greetd that fails to start also takes down the only getty you would have used to debug it. Fedora's default `rhgb quiet` plus no plymouth on a minimal install used to freeze GRUB's `Booting …` message on screen. The `bootloader` role strips those args so kernel and systemd messages print; `Ctrl+Alt+F3` or SSH still gets you in. See [DEPLOY-VM.md](DEPLOY-VM.md#recovering-a-machine-with-no-login-prompt).
 - Fedora's `greetd` package does not create the `greeter` user that `/etc/greetd/config.toml` points at, and greetd exits immediately without it. The `services` role creates it and asserts it resolves before switching the default target, because that combination is exactly how you get a green playbook and an unbootable-looking machine.
 - `pipewire` / `wireplumber` user units need a user D-Bus session. That usually is not there during `ansible-pull`. The tasks use `ignore_errors`. After the first Sway login:
 

@@ -1,0 +1,30 @@
+# Heimora GRUB theme. Colour-only so we do not need .pf2 fonts or a PNG.
+# gfxterm fills desktop-color; the kernel is started with the default payload
+# (do not set GRUB_GFXPAYLOAD_LINUX=keep — that fights NVIDIA simpledrm).
+
+desktop-color: "#0a1628"
+title-text: "Heimora"
+title-color: "#8ecae6"
+
++ boot_menu {
+  left = 18%
+  width = 64%
+  top = 26%
+  height = 42%
+  item_color = "#e0e6ed"
+  selected_item_color = "#0a1628"
+  selected_item_bg_color = "#8ecae6"
+  item_height = 36
+  item_padding = 12
+  item_spacing = 8
+}
+
++ label {
+  id = "__timeout__"
+  left = 18%
+  top = 74%
+  width = 64%
+  align = "center"
+  color = "#8ecae6"
+  text = "Booting in %d seconds"
+}

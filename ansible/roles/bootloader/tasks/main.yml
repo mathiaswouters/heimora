@@ -1,0 +1,144 @@
+---
+# Fedora's bootloader is GRUB + Boot Loader Spec. Anaconda already wrote
+# machine-specific kernel args (root=, rd.luks.uuid=, resume=). This role
+# never replaces that line wholesale — it only edits named keys in
+# /etc/default/grub, strips/adds tokens, and mirrors arg changes onto the
+# existing BLS entries with grubby so the running kernels match.
+
+- name: Check for GRUB defaults
+  ansible.builtin.stat:
+    path: /etc/default/grub
+  register: heimora_grub_default
+
+- name: Skip bootloader customisation when GRUB is not installed
+  ansible.builtin.debug:
+    msg: >-
+      No /etc/default/grub — this machine is not using GRUB (systemd-boot
+      or a custom layout). Bootloader role is a no-op.
+  when: not heimora_grub_default.stat.exists
+
+- name: Locate grub.cfg
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: heimora_grub_cfg_candidates
+  loop:
+    - /boot/grub2/grub.cfg
+    - /boot/efi/EFI/fedora/grub.cfg
+  when: heimora_grub_default.stat.exists
+
+- name: Pick the GRUB config path Fedora will actually boot
+  ansible.builtin.set_fact:
+    heimora_grub_cfg: "{{ (heimora_grub_cfg_candidates.results | selectattr('stat.exists') | map(attribute='item') | list | first) | default('/boot/grub2/grub.cfg') }}"
+  when: heimora_grub_default.stat.exists
+
+- name: Set GRUB menu timeout
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_TIMEOUT='
+    line: "GRUB_TIMEOUT={{ grub_timeout }}"
+  notify: Rebuild GRUB configuration
+  when: heimora_grub_default.stat.exists
+
+- name: Show the GRUB menu instead of hiding it
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_TIMEOUT_STYLE='
+    line: "GRUB_TIMEOUT_STYLE={{ grub_timeout_style }}"
+  notify: Rebuild GRUB configuration
+  when: heimora_grub_default.stat.exists
+
+- name: Label the GRUB distributor
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_DISTRIBUTOR='
+    line: 'GRUB_DISTRIBUTOR="{{ grub_distributor }}"'
+  notify: Rebuild GRUB configuration
+  when: heimora_grub_default.stat.exists
+
+- name: Point GRUB at the Heimora theme
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_THEME='
+    line: 'GRUB_THEME="{{ grub_theme_path }}"'
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+- name: Drop a leftover GRUB_THEME line when the theme is disabled
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_THEME='
+    state: absent
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - not (grub_theme | bool)
+
+- name: Use gfxterm so the colour theme can render
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?\s*GRUB_TERMINAL_OUTPUT='
+    line: 'GRUB_TERMINAL_OUTPUT="gfxterm"'
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+- name: Install the Heimora GRUB theme
+  ansible.builtin.copy:
+    src: theme/
+    dest: "{{ grub_theme_path | dirname }}/"
+    directory_mode: "0755"
+    mode: "0644"
+  notify: Rebuild GRUB configuration
+  when:
+    - heimora_grub_default.stat.exists
+    - grub_theme | bool
+
+- name: Rewrite GRUB_CMDLINE_LINUX without replacing Anaconda's args
+  ansible.builtin.command:
+    argv:
+      - python3
+      - "{{ role_path }}/files/rewrite_grub_cmdline.py"
+      - /etc/default/grub
+      - "{{ grub_remove_kernel_args | join(',') }}"
+      - "{{ grub_extra_kernel_args | join(',') }}"
+  register: heimora_grub_cmdline
+  changed_when: heimora_grub_cmdline.rc == 0
+  failed_when: heimora_grub_cmdline.rc == 1
+  notify: Rebuild GRUB configuration
+  when: heimora_grub_default.stat.exists
+
+- name: Read Boot Loader Spec kernel options
+  ansible.builtin.command:
+    argv:
+      - grubby
+      - --info=ALL
+  register: heimora_grubby_info
+  changed_when: false
+  failed_when: false
+  when: heimora_grub_default.stat.exists
+
+- name: Mirror removed kernel args onto existing BLS entries
+  ansible.builtin.command:
+    argv:
+      - grubby
+      - --update-kernel=ALL
+      - --remove-args={{ grub_remove_kernel_args | join(' ') }}
+  when:
+    - heimora_grub_default.stat.exists
+    - heimora_grubby_info.rc | default(1) == 0
+    - grub_remove_kernel_args | intersect(heimora_grubby_info.stdout.split()) | length > 0
+
+- name: Mirror extra kernel args onto existing BLS entries
+  ansible.builtin.command:
+    argv:
+      - grubby
+      - --update-kernel=ALL
+      - --args={{ grub_extra_kernel_args | join(' ') }}
+  when:
+    - heimora_grub_default.stat.exists
+    - heimora_grubby_info.rc | default(1) == 0
+    - grub_extra_kernel_args | length > 0
+    - grub_extra_kernel_args | reject('in', heimora_grubby_info.stdout.split()) | list | length > 0

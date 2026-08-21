@@ -8,9 +8,9 @@
 #   sudo ansible-playbook /opt/heimora/ansible/site.yml --tags sway
 #   sudo ansible-playbook /opt/heimora/ansible/site.yml --check
 #
-# Roles are ordered deliberately: base system/repos first, then NVIDIA
-# (no-op without a GPU), then the WM stack, then apps, then dotfiles,
-# then services/enablement last.
+# Roles are ordered deliberately: base system/repos first, then GRUB,
+# then NVIDIA (no-op without a GPU), then the WM stack, then apps, then
+# dotfiles, then services/enablement last.
 
 - name: Provision Fedora Sway environment
   hosts: all
@@ -28,6 +28,8 @@
   roles:
     - role: base
       tags: [base]
+    - role: bootloader
+      tags: [bootloader]
     - role: nvidia
       tags: [nvidia, apps]
     - role: sway
