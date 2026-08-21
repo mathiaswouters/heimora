@@ -49,6 +49,11 @@
         export GBM_BACKEND=nvidia-drm
         export WLR_NO_HARDWARE_CURSORS=1
         export LIBVA_DRIVER_NAME=nvidia
+        # sway <= 1.11 (what Fedora 44 ships) calls exit(EXIT_FAILURE) as soon
+        # as it sees the nvidia-drm DRM driver unless this flag is passed. The
+        # session dies in under a second and greetd drops straight back to
+        # tuigreet, which reads as "the password did not work".
+        set -- --unsupported-gpu "$@"
       fi
       exec sway "$@"
 

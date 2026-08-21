@@ -170,7 +170,7 @@ That role is a no-op when `lspci` sees no NVIDIA adapter, so a VM without GPU pa
 3. Disable **Secure Boot**, or enrol a MOK and sign the kmod. An unsigned module with Secure Boot on means nouveau or a black screen.
 4. Do **not** add `nvidia-drm.modeset=1` to the kernel command line. RPM Fusion already enables KMS; that flag fights Fedora's simpledrm patch.
 
-greetd starts `/usr/local/bin/heimora-sway` instead of bare `sway`. If the nvidia module is loaded, that wrapper sets `GBM_BACKEND`, `__GLX_VENDOR_LIBRARY_NAME`, `LIBVA_DRIVER_NAME`, and `WLR_NO_HARDWARE_CURSORS` before the compositor starts.
+greetd starts `/usr/local/bin/heimora-sway` instead of bare `sway`. If the nvidia module is loaded, that wrapper sets `GBM_BACKEND`, `__GLX_VENDOR_LIBRARY_NAME`, `LIBVA_DRIVER_NAME`, and `WLR_NO_HARDWARE_CURSORS`, and launches `sway --unsupported-gpu`. Sway 1.11 (Fedora 44) refuses to run on the proprietary driver without that flag — see the gotcha below.
 
 Steam launch options that usually help on this GPU:
 
@@ -197,6 +197,7 @@ gamemoderun gamescope -f -- %command%
 - Run `ansible-pull` with **sudo**. The playbook uses `become` with `become_ask_pass = False`.
 - A minimal Fedora install boots to `multi-user.target`. Enabling greetd is not enough on its own, because greetd is `WantedBy=graphical.target` — you would reboot straight back into a TTY. The `services` role runs `systemctl set-default graphical.target` to fix that. Verify with `systemctl get-default`.
 - greetd's unit is `Conflicts=getty@tty1.service`, so a greetd that fails to start also takes down the only getty you would have used to debug it. Fedora's default `rhgb quiet` plus no plymouth on a minimal install used to freeze GRUB's `Booting …` message on screen. The `bootloader` role strips those args so kernel and systemd messages print; `Ctrl+Alt+F3` or SSH still gets you in. See [DEPLOY-VM.md](DEPLOY-VM.md#recovering-a-machine-with-no-login-prompt).
+- Sway does not support the proprietary NVIDIA driver. On 1.11, the version in Fedora 44, `detect_proprietary()` sees the `nvidia-drm` DRM driver and calls `exit(EXIT_FAILURE)` unless you pass `--unsupported-gpu`. The session dies instantly, greetd restarts tuigreet, and it looks like the password was wrong — the only clue is a flash of `!!! Proprietary Nvidia drivers are in use !!!`. `heimora-sway` passes the flag whenever the nvidia module is loaded. To read the real error after a bounce: `journalctl -b -u greetd -e`. (Sway 1.12 downgrades this to a swaynag warning.)
 - Fedora's `greetd` package does not create the `greeter` user that `/etc/greetd/config.toml` points at, and greetd exits immediately without it. The `services` role creates it and asserts it resolves before switching the default target, because that combination is exactly how you get a green playbook and an unbootable-looking machine.
 - `pipewire` / `wireplumber` user units need a user D-Bus session. That usually is not there during `ansible-pull`. The tasks use `ignore_errors`. After the first Sway login:
 

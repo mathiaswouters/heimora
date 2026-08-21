@@ -105,7 +105,7 @@ user_in_group() {
 
 file_contains() {
     local path="$1" pattern="$2"
-    [[ -f "$path" ]] && grep -Eq "$pattern" "$path"
+    [[ -f "$path" ]] && grep -Eq -- "$pattern" "$path"
 }
 
 # --- load vars --------------------------------------------------------------
@@ -363,6 +363,16 @@ if [[ -x /usr/local/bin/heimora-sway ]]; then
     ok "/usr/local/bin/heimora-sway is executable"
 else
     fail "/usr/local/bin/heimora-sway is missing or not executable"
+fi
+
+# Without the flag, sway <= 1.11 exits the moment it sees nvidia-drm and greetd
+# bounces back to tuigreet, which looks like a rejected password.
+if [[ $HAS_NVIDIA -eq 1 ]]; then
+    if file_contains /usr/local/bin/heimora-sway '\-\-unsupported-gpu'; then
+        ok "heimora-sway passes --unsupported-gpu to sway"
+    else
+        fail "heimora-sway does not pass --unsupported-gpu — sway will exit on the proprietary NVIDIA driver"
+    fi
 fi
 
 if file_contains /etc/greetd/config.toml 'command = "tuigreet --time --cmd /usr/local/bin/heimora-sway"' \
