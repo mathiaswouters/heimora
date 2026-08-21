@@ -47,10 +47,12 @@ heimora/
 
 ## First-time setup (per machine)
 
-1. Install Fedora from the [Everything netinst ISO](https://fedoraproject.org/misc/). Choose a **minimal** package set. Create user **`mathias`** (must match `provision_user` in `ansible/group_vars/all.yml`) and put that user in **wheel**.
+1. Install Fedora from the [Everything netinst ISO](https://fedoraproject.org/misc/). Choose the **Fedora Server** package set. Create user **`mathias`** (must match `provision_user` in `ansible/group_vars/all.yml`) and put that user in **wheel**.
 2. Log in, get network, then:
 
 ```bash
+sudo systemctl disable --now cockpit.socket
+sudo dnf remove cockpit*
 sudo hostnamectl set-hostname --static <hostname>
 hostnamectl
 sudo dnf update
