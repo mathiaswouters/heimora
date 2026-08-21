@@ -40,6 +40,8 @@ heimora/
 │       ├── apps/            # general + devops packages
 │       ├── dotfiles/        # clone dotfiles repo, symlink per its links.conf
 │       └── services/        # greetd
+├── scripts/
+│   └── validate.sh          # post-install sanity check
 ├── README.md
 ├── DEPLOY-VM.md             # first test in a VM
 └── APPS-INVENTORY.md        # app categories to decide on
@@ -108,6 +110,16 @@ Useful flags (after `--` for `ansible-pull`, or on `ansible-playbook`):
 - `--tags nvidia` — only the 580xx driver and gaming packages
 - `--check` — dry run
 - `-vv` — verbose
+
+## Validate the install
+
+After a playbook run (and a reboot if NVIDIA was installed), check that packages, repos, greetd, GRUB, and dotfile links match `group_vars/all.yml`:
+
+```bash
+/opt/heimora/scripts/validate.sh
+```
+
+The script exits 1 on a real miss (re-run `ansible-playbook`). Warnings are expected for things the playbook cannot finish: DaVinci Resolve, pipewire user units before the first graphical login, and an NVIDIA module that is built but not loaded yet.
 
 ## GRUB
 
