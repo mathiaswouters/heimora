@@ -63,7 +63,7 @@ sudo ansible-pull -U https://github.com/mathiaswouters/heimora.git \
 
 `ansible-pull` clones the repo to `/opt/heimora` and runs `ansible/site.yml` against the local machine. That takes a while (RPM Fusion, Sway, apps).
 
-3. Reboot or log out. **tuigreet** should start **Sway**.
+3. Reboot or log out. **tuigreet** should start **Sway**. How to move around (Sway, tmux, Ghostty, zsh, lf, nvim) lives in the [dotfiles cheat sheet](https://github.com/mathiaswouters/dotfiles/blob/master/CHEATSHEET.md).
 4. DaVinci Resolve is not fully automated — finish it by hand after the first Sway login. See [DaVinci Resolve](#davinci-resolve).
 
 Create the GitHub repo and push **before** you run this on a machine. The pull URL must be cloneable. The dotfiles role also clones `dotfiles_repo` from `group_vars/all.yml`.
